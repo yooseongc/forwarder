@@ -45,7 +45,7 @@ export default function ConnectionList({ profiles, selectedId, getStatus, onSele
             >
               <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor(status)}`} />
               <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-medium truncate">{p.name || "이름 없음"}</div>
+                <div className="text-[13px] font-medium truncate">{p.name || t("layout.unnamed")}</div>
                 <div className="text-[11px] text-muted-foreground truncate">
                   {p.username}@{p.host}
                 </div>

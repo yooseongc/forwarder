@@ -1,148 +1,142 @@
 # SSH Forwarder — UI Style Guide
 
-## Design System
+## Foundation
 
-shadcn/ui 컨셉의 zinc 다크 테마 기반. Tailwind CSS v4 `@theme` 블록으로 정의.
+- **Framework**: shadcn/ui (Radix + base-ui primitives)
+- **CSS**: Tailwind CSS v4 (`@theme` 블록 + `.dark` 클래스)
+- **Icons**: lucide-react
+- **Font**: Geist Variable (shadcn 기본)
 
-## Color Palette
+## Color Tokens
 
-### Background Layers
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `background` | `#09090b` | 앱 전체 배경 |
-| `card` | `#0f0f13` | 카드, 패널 배경 |
-| `muted` | `#18181b` | 호버, 비활성 배경 |
-| `sidebar` | `#0c0c10` | 사이드바 배경 |
+CSS 변수로 정의 (`:root` 라이트, `.dark` 오버라이드). Tailwind 클래스로 사용: `bg-background`, `text-foreground`, `border-border`, 등.
+
+### Surface
+| Token | Usage |
+|-------|-------|
+| `background` | 앱 전체 배경 |
+| `card` | 카드 배경 |
+| `muted` | 호버, 비활성 배경 |
+| `sidebar` | 사이드바 배경 |
+| `popover` | 팝오버/드롭다운 배경 |
 
 ### Text
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `foreground` | `#fafafa` | 주 텍스트 |
-| `card-foreground` | `#fafafa` | 카드 내 텍스트 |
-| `muted-foreground` | `#a1a1aa` | 보조 텍스트, 라벨 |
-| `sidebar-foreground` | `#a1a1aa` | 사이드바 비선택 항목 |
+| Token | Usage |
+|-------|-------|
+| `foreground` | 주 텍스트 |
+| `muted-foreground` | 보조 텍스트, 라벨, 힌트 |
+| `card-foreground` | 카드 내 텍스트 |
 
-### Accent & Status
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `accent` | `#6366f1` | 주 액션 (indigo) |
-| `accent-hover` | `#818cf8` | 호버 상태 |
-| `destructive` | `#ef4444` | 삭제, 에러 |
-| `status-connected` | `#22c55e` | 연결됨 (green) |
-| `status-disconnected` | `#52525b` | 끊김 (zinc) |
-| `status-connecting` | `#eab308` | 연결 중 (yellow) |
-| `status-error` | `#ef4444` | 에러 (red) |
+### Interactive
+| Token | Usage |
+|-------|-------|
+| `primary` | 주 액션 버튼 |
+| `secondary` | 보조 액션 |
+| `accent` | 강조 (사이드바 active 등) |
+| `destructive` | 삭제, 에러 |
+| `border` | 카드/구분선 border |
+| `input` | 입력 필드 border |
+| `ring` | focus ring |
 
-### Border & Input
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `border` | `#27272a` | 카드/구분선 border |
-| `input` | `#27272a` | 입력 필드 border |
-| `ring` | `#6366f1` | focus ring |
+### Status (커스텀)
+| Token | Color |
+|-------|-------|
+| `status-connected` | green-500 |
+| `status-disconnected` | zinc-600 |
+| `status-connecting` | yellow-500 |
+| `status-error` | red-500 |
 
 ## Typography
 
-- **Font**: Inter, system-ui, -apple-system
-- **Base size**: 13px
-- **Line height**: 1.6
+- **Base**: 13px / line-height 1.6 / Geist Variable
+- Page title: `text-lg font-semibold`
+- Section header: `text-xs font-medium text-muted-foreground uppercase tracking-wider`
+- Body: `text-sm text-foreground`
+- Label: `text-xs font-medium text-muted-foreground`
+- Caption/hint: `text-[10px] text-muted-foreground/60`
 
-| Element | Size | Weight | Color |
-|---------|------|--------|-------|
-| Page title | text-lg (18px) | font-semibold | foreground |
-| Section header | text-xs (12px) | font-medium, uppercase, tracking-wider | muted-foreground |
-| Body text | text-sm (14px) | font-normal | foreground |
-| Label | text-xs (12px) | font-medium | muted-foreground |
-| Monospace | text-sm | font-mono | foreground |
-| Caption | text-xs | font-normal | muted-foreground |
-
-## Components
+## Components (shadcn/ui)
 
 ### Button
-5개 variant, 3개 size:
-
-| Variant | Style |
-|---------|-------|
-| `default` | indigo 배경, 흰 텍스트, shadow-sm |
-| `secondary` | muted 배경, border |
-| `destructive` | red/15 배경, red 텍스트, red border |
-| `ghost` | 투명, 호버 시 muted 배경 |
-| `outline` | 투명, border, 호버 시 muted 배경 |
-
-| Size | Height |
-|------|--------|
-| `sm` | h-7, px-3, text-xs |
-| `default` | h-8, px-4, text-sm |
-| `icon` | h-8, w-8 |
-
-공통: `rounded-md`, `active:scale-[0.97]`, `focus-visible:ring-2`
+Variants: `default` | `secondary` | `destructive` | `outline` | `ghost` | `link`
+Sizes: `default` (h-8) | `sm` (h-7) | `xs` (h-6) | `lg` (h-9) | `icon` / `icon-sm` / `icon-xs` / `icon-lg`
 
 ### Input / Select
-- Height: `h-8`
-- Border: `border-input`
-- Background: `bg-background`
-- Focus: `ring-2 ring-ring ring-offset-1`
-- Label 위에 1.5 gap
+- `h-8`, `rounded-lg`, focus ring, destructive aria-invalid
+- Label은 `space-y-1.5`로 상하 간격
 
-### Toggle (Switch)
-- Size: `h-5 w-9`
-- On: `bg-accent`, Off: `bg-zinc-700`
-- Thumb: `w-4 h-4 bg-white shadow-md`
+### Switch
+- `bg-accent` when checked, `bg-zinc-700` otherwise
+- Thumb: white w-4 h-4
 
 ### Card
-- `rounded-lg border border-border bg-card`
-- Padding: `p-4`
-- 리스트 카드: `divide-y divide-border overflow-hidden`
+- `rounded-xl border bg-card`
+- 리스트: `divide-y divide-border`
+
+### Badge
+- `outline` variant + custom color (`bg-blue-600/20 text-blue-400` 등)
 
 ## Layout
 
-### 전체 구조
 ```
-┌──────────┬────────────────────────┐
-│ Sidebar  │ Top Bar (h-12, drag)   │
-│ (w-56)   ├────────────────────────│
-│          │ Content                 │
-│          │ (max-w-2xl mx-auto p-6)│
-│          │                        │
-└──────────┴────────────────────────┘
+┌──────────┬────────────────────────────┐
+│ Sidebar  │ Top Bar (h-12, drag)       │
+│ (w-56)   ├────────────────────────────│
+│          │ Content                    │
+│          │ max-w-2xl mx-auto p-6      │
+│          │ space-y-5 (섹션 간격)       │
+└──────────┴────────────────────────────┘
 ```
 
-### Sidebar
-- Width: `w-56`
-- Background: `bg-sidebar`
-- Header: `h-12`, 앱 이름 + 추가 버튼
-- Items: `px-3 py-2 rounded-md`, 호버 `bg-sidebar-hover`
-- Active: `bg-sidebar-active text-foreground`
-- Status dot: `w-1.5 h-1.5 rounded-full`
+- Sidebar width: `w-56`
+- Top bar height: `h-12`, `data-tauri-drag-region`
+- Content: `max-w-2xl mx-auto p-6 space-y-5`
+- 섹션 카드: `rounded-xl border bg-card`, 내부 `p-4`
 
-### Content Area
-- Top bar: `h-12`, 오른쪽 설정 아이콘
-- Content: `max-w-2xl mx-auto p-6 space-y-6`
+## Spacing
 
-## Spacing Rules
-
-| Context | Value |
-|---------|-------|
-| 컨텐츠 영역 padding | `p-6` (24px) |
-| 섹션 간 간격 | `space-y-6` (24px) |
-| 카드 내부 padding | `p-4` (16px) |
-| 폼 필드 간 간격 | `gap-4` (16px) |
-| 라벨 → 입력 간격 | `gap-1.5` (6px) |
-| 사이드바 아이템 간격 | `space-y-0.5` (2px) |
+| 위치 | 값 |
+|------|-----|
+| 콘텐츠 padding | `p-6` |
+| 섹션 간격 | `space-y-5` |
+| 카드 내부 | `p-4` |
+| 폼 필드 간격 | `gap-4` |
+| Label → Input | `space-y-1.5` |
+| 사이드바 아이템 | `space-y-0.5` |
 
 ## Status Indicators
 
-### Connection Status
-- 사이드바: `w-1.5 h-1.5 rounded-full` 점
-- 상태 카드: `w-2.5 h-2.5 rounded-full` 점 + 텍스트 라벨
+- 사이드바 점: `w-2 h-2 rounded-full` + status color
+- 상태 카드 점: `w-2.5 h-2.5 rounded-full`
+- 터널 상태 점: `w-2 h-2`
 
-### Forwarding Kind Badge
+## Forwarding Kind Badge
 | Kind | Style |
 |------|-------|
-| Local (L) | `bg-blue-600/20 text-blue-400` |
-| Remote (R) | `bg-amber-600/20 text-amber-400` |
-| Dynamic (D) | `bg-purple-600/20 text-purple-400` |
+| L (Local) | `bg-blue-600/20 text-blue-400` |
+| R (Remote) | `bg-amber-600/20 text-amber-400` |
+| D (Dynamic) | `bg-purple-600/20 text-purple-400` |
 
 ## Error Display
 
-- 인라인 에러: `rounded-lg border border-destructive/30 bg-destructive/10 text-sm text-destructive`
-- 항상 `extractErrorMessage()` 유틸로 Tauri AppError 객체 파싱
+```tsx
+<Card className="border-destructive/30 bg-destructive/10">
+  <CardContent className="p-3 text-sm text-destructive">
+    {extractErrorMessage(error)}
+  </CardContent>
+</Card>
+```
+
+항상 `extractErrorMessage()`로 Tauri AppError 객체 파싱.
+
+## i18n
+
+- 모든 UI 문자열은 `t("key")` 함수로 렌더링
+- 키는 `ko.ts`에 정의, `en.ts`에 대응
+- 언어 변경 시 `window.location.reload()` (React 상태 동기화 위해)
+
+## Theme
+
+- `:root`에 라이트 변수, `.dark` 클래스에 다크 변수 오버라이드
+- `useTheme()` 훅: `setTheme("light" | "dark" | "system")`
+- 시스템 모드는 `prefers-color-scheme` 미디어 쿼리 감지

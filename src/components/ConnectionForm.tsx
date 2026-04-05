@@ -29,7 +29,9 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
     setProfile(initial);
     setPassword("");
     setSaveError(null);
-    api.hasCredential(initial.id).then(setHasStoredPassword).catch(() => {});
+    api.hasCredential(initial.id).then(setHasStoredPassword).catch((e) => {
+      console.error("Failed to check credential:", e);
+    });
   }, [initial.id]);
 
   const update = (partial: Partial<ConnectionProfile>) =>
@@ -95,30 +97,30 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
 
         {saveError && (
           <Card className="border-destructive/30 bg-destructive/10">
-            <CardContent className="p-3 text-sm text-destructive">저장 실패: {saveError}</CardContent>
+            <CardContent className="p-3 text-sm text-destructive">{t("form.saveFailed")}: {saveError}</CardContent>
           </Card>
         )}
 
         {/* Server info */}
         <div className="space-y-4">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">서버 정보</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("form.serverInfo")}</h3>
           <Card>
             <CardContent className="p-4 grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="name">이름</Label>
+                <Label htmlFor="name">{t("form.name")}</Label>
                 <Input id="name" value={profile.name} onChange={(e) => update({ name: e.target.value })} placeholder="My Server" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="username">사용자</Label>
+                <Label htmlFor="username">{t("form.username")}</Label>
                 <Input id="username" value={profile.username} onChange={(e) => update({ username: e.target.value })} placeholder="root" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="host">호스트</Label>
+                <Label htmlFor="host">{t("form.host")}</Label>
                 <Input id="host" value={profile.host} onChange={(e) => update({ host: e.target.value })} placeholder="192.168.1.100" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="port">포트</Label>
-                <Input id="port" type="number" value={profile.port} onChange={(e) => update({ port: parseInt(e.target.value) || 22 })} />
+                <Label htmlFor="port">{t("form.port")}</Label>
+                <Input id="port" type="number" min="1" max="65535" value={profile.port} onChange={(e) => update({ port: parseInt(e.target.value) || 22 })} />
               </div>
             </CardContent>
           </Card>
@@ -126,11 +128,11 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
 
         {/* Auth */}
         <div className="space-y-4">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">인증</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("form.auth")}</h3>
           <Card>
             <CardContent className="p-4 space-y-4">
               <div className="space-y-1.5">
-                <Label>인증 방식</Label>
+                <Label>{t("form.authMethod")}</Label>
                 <Select value={profile.authMethod.type} onValueChange={(v) => v && updateAuth(v)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -145,7 +147,7 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
 
               {showKey && (
                 <div className="space-y-1.5">
-                  <Label>키 파일 경로</Label>
+                  <Label>{t("form.keyFilePath")}</Label>
                   <div className="flex gap-2">
                     <Input
                       className="flex-1"
@@ -154,7 +156,7 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
                       placeholder="C:\Users\...\.ssh\id_rsa"
                     />
                     <Button variant="outline" size="default" onClick={browseKeyFile}>
-                      <FolderOpen /> 찾기
+                      <FolderOpen /> {t("action.browse")}
                     </Button>
                   </div>
                 </div>
@@ -162,13 +164,13 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
 
               {showPw && (
                 <div className="space-y-2">
-                  <Label>{profile.authMethod.type === "password" ? "비밀번호" : "키 파일 암호"}</Label>
+                  <Label>{profile.authMethod.type === "password" ? t("form.password") : t("form.keyPassphrase")}</Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder={hasStoredPassword ? "저장됨 (변경 시 입력)" : "비밀번호 입력"}
+                      placeholder={hasStoredPassword ? t("form.passwordStored") : t("form.passwordEnter")}
                       className="pr-16"
                     />
                     <Button
@@ -186,7 +188,7 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
                       size="xs"
                       onClick={async () => { await api.deleteCredential(profile.id); setHasStoredPassword(false); }}
                     >
-                      <Trash2 /> 저장된 비밀번호 삭제
+                      <Trash2 /> {t("form.deleteStoredPassword")}
                     </Button>
                   )}
                 </div>
@@ -198,15 +200,15 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
         {/* Forwarding rules */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">포워딩 규칙</h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("form.forwardingRules")}</h3>
             <Button variant="ghost" size="sm" onClick={() => update({ forwardingRules: [...profile.forwardingRules, newForwardingRule()] })}>
-              <Plus /> 규칙 추가
+              <Plus /> {t("action.addRule")}
             </Button>
           </div>
           {profile.forwardingRules.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                포워딩 규칙이 없습니다
+                {t("form.noRules")}
               </CardContent>
             </Card>
           ) : (
@@ -225,11 +227,11 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
 
         {/* Options */}
         <div className="space-y-4">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">옵션</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("form.options")}</h3>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <Switch checked={profile.autoConnect} onCheckedChange={(autoConnect) => update({ autoConnect })} />
-              <Label>시작 시 자동 연결</Label>
+              <Label>{t("form.autoConnect")}</Label>
             </CardContent>
           </Card>
         </div>

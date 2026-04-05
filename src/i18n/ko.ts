@@ -70,6 +70,26 @@ export const ko = {
   "layout.emptyState": "연결을 선택하거나 새로 추가하세요",
   "layout.noProfiles": "연결 프로파일이 없습니다",
   "layout.confirmDelete": "이 연결 프로파일을 삭제하시겠습니까?",
+  "layout.unnamed": "이름 없음",
+
+  // Forwarding direction hints
+  "forward.localBind": "로컬 바인드",
+  "forward.localBindHint": "앱 호스트에서 listen",
+  "forward.serverBind": "서버 바인드",
+  "forward.serverBindHint": "SSH 서버에서 listen",
+  "forward.remoteTarget": "원격 대상",
+  "forward.remoteTargetHint": "SSH 서버 기준",
+  "forward.localTarget": "로컬 대상",
+  "forward.localTargetHint": "앱 호스트 기준",
+  "forward.swap": "바인드/대상 바꾸기",
+  "forward.remove": "규칙 삭제",
+
+  // Theme / Language
+  "theme.title": "테마",
+  "theme.light": "라이트",
+  "theme.dark": "다크",
+  "theme.system": "시스템",
+  "language.title": "언어 / Language",
 
   // Tray (Rust-side, for reference)
   "tray.show": "창 열기",

@@ -19,20 +19,14 @@ use super::socks5;
 /// Shared state for reverse forwarding: maps (address, port) → local target.
 type ReverseMap = Arc<Mutex<HashMap<(String, u32), (String, u16)>>>;
 
-#[allow(dead_code)]
 pub(crate) struct ClientHandler {
     /// Maps remote (bind_address, bind_port) to local (target_host, target_port)
     reverse_targets: ReverseMap,
-    /// Re-usable handle reference for opening channels from handler callbacks
-    handle: Option<Arc<client::Handle<ClientHandler>>>,
 }
 
 impl ClientHandler {
     fn new(reverse_targets: ReverseMap) -> Self {
-        Self {
-            reverse_targets,
-            handle: None,
-        }
+        Self { reverse_targets }
     }
 }
 
@@ -42,21 +36,12 @@ impl client::Handler for ClientHandler {
 
     async fn check_server_key(
         &mut self,
-        server_public_key: &key::PublicKey,
+        _server_public_key: &key::PublicKey,
     ) -> Result<bool, Self::Error> {
-        // Check known_hosts file
-        match check_known_hosts(server_public_key).await {
-            HostKeyStatus::Known => Ok(true),
-            HostKeyStatus::Unknown => {
-                // Auto-accept and learn new keys (TOFU: Trust On First Use)
-                log::warn!("Unknown host key, accepting (TOFU policy)");
-                Ok(true)
-            }
-            HostKeyStatus::Changed => {
-                log::error!("HOST KEY CHANGED — possible man-in-the-middle attack!");
-                Ok(false)
-            }
-        }
+        // TOFU (Trust On First Use) policy — accept all keys.
+        // TODO: implement known_hosts file checking (%APPDATA%/forwarder/known_hosts)
+        log::warn!("Accepting SSH host key (TOFU policy)");
+        Ok(true)
     }
 
     async fn server_channel_open_forwarded_tcpip(
@@ -94,22 +79,6 @@ impl client::Handler for ClientHandler {
         }
         Ok(())
     }
-}
-
-// ── Host key verification ──
-
-#[allow(dead_code)]
-enum HostKeyStatus {
-    Known,
-    Unknown,
-    Changed,
-}
-
-async fn check_known_hosts(_server_public_key: &key::PublicKey) -> HostKeyStatus {
-    // TODO: implement full known_hosts file checking
-    // For now, use TOFU (Trust On First Use) policy — accept all keys
-    // Future: read ~/.ssh/known_hosts or %APPDATA%/forwarder/known_hosts
-    HostKeyStatus::Unknown
 }
 
 // ── SSH Session ──
@@ -177,29 +146,43 @@ impl SshSession {
         tunnel_errors: Arc<Mutex<Vec<TunnelError>>>,
     ) -> Result<()> {
         for rule in rules.iter().filter(|r| r.enabled) {
-            let handle = self.handle.clone();
-            let rule = rule.clone();
-            let errors = tunnel_errors.clone();
-            let cancel = self.cancel.clone();
-
-            let task = tokio::spawn(async move {
-                let rule_id = rule.id.clone();
-                let result = match rule.kind {
-                    ForwardingKind::Local => run_local_forward(handle, &rule, cancel).await,
-                    ForwardingKind::Remote => run_remote_keepalive(handle, &rule, cancel).await,
-                    ForwardingKind::Dynamic => run_dynamic_forward(handle, &rule, cancel).await,
-                };
-                if let Err(e) = result {
-                    log::error!("Tunnel error ({}): {}", rule_id, e);
-                    let mut errs = errors.lock().await;
-                    if let Some(entry) = errs.iter_mut().find(|t| t.rule_id == rule_id) {
-                        entry.message = Some(e.to_string());
-                    }
-                }
-            });
-            self.tunnel_tasks.push(task);
+            self.spawn_tunnel(rule, tunnel_errors.clone());
         }
         Ok(())
+    }
+
+    /// Start a single additional tunnel at runtime.
+    pub async fn start_single_tunnel(
+        &mut self,
+        rule: &ForwardingRule,
+        tunnel_errors: Arc<Mutex<Vec<TunnelError>>>,
+    ) -> Result<()> {
+        self.spawn_tunnel(rule, tunnel_errors);
+        Ok(())
+    }
+
+    /// Spawn a single tunnel task and track its handle.
+    fn spawn_tunnel(&mut self, rule: &ForwardingRule, tunnel_errors: Arc<Mutex<Vec<TunnelError>>>) {
+        let handle = self.handle.clone();
+        let rule = rule.clone();
+        let cancel = self.cancel.clone();
+
+        let task = tokio::spawn(async move {
+            let rule_id = rule.id.clone();
+            let result = match rule.kind {
+                ForwardingKind::Local => run_local_forward(handle, &rule, cancel).await,
+                ForwardingKind::Remote => run_remote_keepalive(handle, &rule, cancel).await,
+                ForwardingKind::Dynamic => run_dynamic_forward(handle, &rule, cancel).await,
+            };
+            if let Err(e) = result {
+                log::error!("Tunnel error ({}): {}", rule_id, e);
+                let mut errs = tunnel_errors.lock().await;
+                if let Some(entry) = errs.iter_mut().find(|t| t.rule_id == rule_id) {
+                    entry.message = Some(e.to_string());
+                }
+            }
+        });
+        self.tunnel_tasks.push(task);
     }
 
     /// Start a health check task that monitors the SSH connection.
@@ -222,46 +205,11 @@ impl SshSession {
         })
     }
 
-    #[allow(dead_code)]
-    pub fn is_closed(&self) -> bool {
-        self.handle.is_closed()
-    }
-
     pub fn disconnect(&mut self) {
         self.cancel.cancel();
         for task in self.tunnel_tasks.drain(..) {
             task.abort();
         }
-    }
-
-    /// Start a single additional tunnel at runtime.
-    pub async fn start_single_tunnel(
-        &mut self,
-        rule: &ForwardingRule,
-        tunnel_errors: Arc<Mutex<Vec<TunnelError>>>,
-    ) -> Result<()> {
-        let handle = self.handle.clone();
-        let rule = rule.clone();
-        let errors = tunnel_errors.clone();
-        let cancel = self.cancel.clone();
-
-        let task = tokio::spawn(async move {
-            let rule_id = rule.id.clone();
-            let result = match rule.kind {
-                ForwardingKind::Local => run_local_forward(handle, &rule, cancel).await,
-                ForwardingKind::Remote => run_remote_keepalive(handle, &rule, cancel).await,
-                ForwardingKind::Dynamic => run_dynamic_forward(handle, &rule, cancel).await,
-            };
-            if let Err(e) = result {
-                log::error!("Tunnel error ({}): {}", rule_id, e);
-                let mut errs = errors.lock().await;
-                if let Some(entry) = errs.iter_mut().find(|t| t.rule_id == rule_id) {
-                    entry.message = Some(e.to_string());
-                }
-            }
-        });
-        self.tunnel_tasks.push(task);
-        Ok(())
     }
 }
 

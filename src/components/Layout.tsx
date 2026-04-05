@@ -70,7 +70,7 @@ export default function Layout() {
             className={`p-1.5 rounded-md transition-colors cursor-pointer ${
               view.type === "settings" ? "text-foreground bg-muted" : "text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
-            title="설정"
+            title={t("settings.title")}
           >
             <Settings className="size-4" />
           </button>

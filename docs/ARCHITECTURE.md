@@ -1,53 +1,36 @@
-# SSH Forwarder — Architecture Design Document
+# SSH Forwarder — Architecture
 
-## 1. Overview
+## Overview
 
 SSH 포트포워딩을 GUI로 관리하는 Windows 데스크톱 앱.
-여러 SSH 서버에 대한 Local/Remote/Dynamic 포워딩 규칙을 프로파일로 저장하고,
-연결·해제·재연결·상태 모니터링·자동 시작을 제공한다.
+Local/Remote/Dynamic 포워딩, 다중 프로파일, 상태 모니터링, 자동 시작, i18n, 테마 전환.
 
-## 2. System Architecture
+## System
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  Windows                                            │
 │  ┌───────────────────────────────────────────────┐  │
-│  │  Tauri WebView (React + Tailwind v4)          │  │
-│  │  ┌─────────────┐  ┌────────────────────────┐  │  │
-│  │  │ Connection  │  │  Content Area           │  │  │
-│  │  │ List        │  │  - ConnectionStatus     │  │  │
-│  │  │ (sidebar)   │  │  - ConnectionForm       │  │  │
-│  │  │             │  │  - SettingsView         │  │  │
-│  │  └─────────────┘  └────────────────────────┘  │  │
+│  │  Tauri WebView — React + shadcn/ui            │  │
+│  │  Layout → ConnectionList + Content area       │  │
+│  │          (Status / Form / Settings)           │  │
 │  └──────────────┬────────────────────────────────┘  │
-│                 │ Tauri IPC (17 commands + events)   │
+│                 │ Tauri IPC (18 commands + events)   │
 │  ┌──────────────▼────────────────────────────────┐  │
 │  │  Rust Backend                                  │  │
-│  │  ┌──────────┐  ┌────────┐  ┌──────────────┐  │  │
-│  │  │commands  │  │ state  │  │ config/store │  │  │
-│  │  │ error.rs │──│  .rs   │  │   .rs        │  │  │
-│  │  └────┬─────┘  └────────┘  └──────┬───────┘  │  │
-│  │       │                           │           │  │
-│  │  ┌────▼──────────────┐    ┌───────▼────────┐  │  │
-│  │  │ ssh/              │    │ %APPDATA%/     │  │  │
-│  │  │ ├─ session.rs     │    │ forwarder/     │  │  │
-│  │  │ ├─ socks5.rs      │    │ config.json    │  │  │
-│  │  │ └─ types.rs       │    └────────────────┘  │  │
-│  │  └────┬──────────────┘                        │  │
-│  │       │                    ┌────────────────┐  │  │
-│  │  ┌────▼──────────────┐    │ credential.rs  │  │  │
-│  │  │ SSH Server(s)     │    │ → Win Cred Mgr │  │  │
-│  │  │ via russh 0.46    │    └────────────────┘  │  │
-│  │  └───────────────────┘                        │  │
+│  │  commands.rs ─ state.rs ─ config/store.rs     │  │
+│  │  error.rs             ssh/session.rs          │  │
+│  │                       ssh/socks5.rs           │  │
+│  │                       credential.rs           │  │
 │  └───────────────────────────────────────────────┘  │
 │  ┌──────────┐                                       │
-│  │ System   │  트레이, 자동시작, --minimized         │
-│  │ Tray     │                                       │
+│  │ Tray +   │  자동 시작, --minimized, single-inst  │
+│  │ Autostart│                                       │
 │  └──────────┘                                       │
 └─────────────────────────────────────────────────────┘
 ```
 
-## 3. Data Model
+## Data Model
 
 ```
 ConnectionProfile
@@ -58,11 +41,12 @@ ConnectionProfile
 └── autoConnect: bool
 ```
 
-**영속화**: `%APPDATA%/forwarder/config.json` (CONFIG_LOCK, 손상 시 .bak 폴백)
-**비밀번호**: Windows Credential Manager (`keyring`, 서비스 `ssh-forwarder`)
-**테스트**: `FORWARDER_CONFIG_DIR` 환경변수 오버라이드
+**영속화**
+- 설정: `%APPDATA%/forwarder/config.json` (CONFIG_LOCK static Mutex, 손상 시 `.json.bak` 폴백)
+- 비밀번호: Windows Credential Manager (`keyring`, 서비스 `ssh-forwarder`)
+- 테스트: `FORWARDER_CONFIG_DIR` 환경변수 오버라이드
 
-## 4. Error Handling
+## Error Handling
 
 ```
 AppError { code: ErrorCode, message: String }
@@ -70,67 +54,91 @@ ErrorCode: PROFILE_NOT_FOUND | AUTH_FAILED | CONNECTION_FAILED
            TUNNEL_BIND_FAILED | TUNNEL_UNSUPPORTED | CONFIG_ERROR
            CREDENTIAL_ERROR | INTERNAL
 ```
+- 모든 Tauri 커맨드가 `Result<T, AppError>` 반환
+- 프론트엔드는 `extractErrorMessage()`로 안전 파싱 (`[object Object]` 방지)
 
-## 5. State Management
+## State Management
 
-**Backend**: `AppState.connections: Arc<Mutex<HashMap<String, ConnectionState>>>`
-- 전이 메서드: `new_connecting()` → `set_connected()` / `set_error()` → `set_disconnected()`
-- Health check: 10초 주기 `is_closed()` → 끊김 시 Error 전환 + 이벤트 emit
+**Backend** — `AppState.connections: Arc<Mutex<HashMap<String, ConnectionState>>>`
 
-**Frontend**: `useConnections` 훅 — `profiles`, `statuses` (Map), `getStatus()`
+상태 전이 메서드:
+- `new_connecting()` → Connecting
+- `set_connected()` → Connected + session 저장
+- `set_error()` → Error
+- `set_disconnected()` → cancel token + abort + session drop
 
-## 6. SSH Tunneling
+**Frontend** — `useConnections` 훅
+- `profiles`, `statuses: Map<id, ProfileStatus>`, `getStatus()`, `refresh()`
+- Tauri `connection-status-changed` 이벤트 구독 → 실시간 반영
+
+## SSH Tunneling
 
 ### Local (-L)
-TCP listener (CancellationToken) → `channel_open_direct_tcpip` → `proxy_channel`
+```
+[앱 호스트 bind] → accept → channel_open_direct_tcpip → [원격 대상]
+```
 
 ### Remote (-R)
-`connect()` 시 Arc 전에 `tcpip_forward()` 호출 → `ClientHandler::server_channel_open_forwarded_tcpip`에서 역방향 연결 수신 → 로컬 대상으로 프록시
-`run_remote_keepalive`: cancel 시 `cancel_tcpip_forward` 호출
+```
+[SSH 서버 bind] → server_channel_open_forwarded_tcpip callback → [앱 호스트 local target]
+```
+- `connect()` 시 Arc 래핑 전 `tcpip_forward` 호출 (&mut Handle 필요)
+- 역방향 연결은 `ClientHandler`의 callback에서 `ReverseMap`으로 타겟 매핑
+- Cancel 시 `cancel_tcpip_forward` 호출
 
 ### Dynamic (-D, SOCKS5)
-TCP listener → `socks5::handle_client` (auth 협상 → CONNECT 파싱 → SSH 채널 → 프록시)
+```
+[로컬 SOCKS5] → handle_client → CONNECT 파싱 → channel_open_direct_tcpip → proxy_channel
+```
 
 ### Graceful Shutdown
-`CancellationToken::cancel()` → 리스너 루프 종료 → abort
-앱 종료: `disconnect_all()` → 전체 세션 정리
+`CancellationToken::cancel()` → 리스너 루프 종료 → 태스크 abort
+앱 종료: `disconnect_all()` → 전체 세션 정리 → `app.exit()`
 
-## 7. System Tray & Auto-start
+## System Integration
 
-- 창 닫기 = 트레이 최소화, 더블클릭 = 복원
-- 종료 시 `disconnect_all()` 호출
-- `tauri-plugin-autostart` + `--minimized` → 트레이 모드 시작
+### Tray
+- 창 닫기(X) → `window.hide()` (트레이 최소화)
+- 트레이 더블클릭 → 복원
+- 컨텍스트 메뉴: 창 열기 / 종료
+
+### Autostart
+- `tauri-plugin-autostart`: Windows 레지스트리 등록
+- `--minimized` 인자 → 창 숨긴 채 시작
 - `auto_connect: true` 프로파일 자동 연결
 
-## 8. i18n
+### Single Instance
+- `tauri-plugin-single-instance`: 중복 실행 방지
+- 두 번째 실행 시도 → 기존 창 포커스
 
-- `src/i18n/`: `t("key")` 함수, 타입 안전한 키
-- 지원 언어: 한국어 (기본), 영어
-- Rust 트레이 메뉴: 현재 한국어 고정 (TODO: 동적 전환)
+## i18n / Theme
 
-## 9. Testing (총 90개)
+- **i18n**: `src/i18n/` (ko/en) — `t("key")` 함수, `useLocale()` 훅, localStorage
+- **Theme**: `src/hooks/useTheme.ts` — 라이트/다크/시스템, `.dark` 클래스 토글, localStorage
 
-| 카테고리 | 수량 | 설명 |
-|----------|------|------|
-| Rust 유닛 | 42 | error, types, state, store, socks5, credential |
-| Rust 통합 | 4 | SSH 인증(pw/key), local forward echo (Docker) |
-| TS 유닛 | 19 | types 유틸리티 |
-| TS API | 10 | useTauri invoke 검증 |
-| TS 컴포넌트 | 15 | ConnectionStatus(7) + ConnectionForm(8) |
+## Testing (89 total)
 
-**Docker**: `tests/docker-compose.yml` — Alpine+OpenSSH+socat, testuser:testpass123, 2222/9999
+| 카테고리 | 수량 |
+|----------|------|
+| Rust 유닛 (error, types, state, store, socks5, credential) | 42 |
+| Rust SSH 통합 (password/key auth, local forward echo) | 4 |
+| TS 유닛 (types utilities) | 19 |
+| TS API (useTauri invoke) | 10 |
+| TS 컴포넌트 (ConnectionStatus + ConnectionForm) | 14 |
 
-## 10. Security
+**Docker 테스트 서버**: Alpine + OpenSSH + Python HTTP(8080) + socat echo(9999)
 
-- **Host key**: TOFU 정책 (Trust On First Use), Changed 시 거부 구조 준비됨
-- **Credential**: OS 자격증명 관리자만 사용
+## Security
+
+- **Host key**: TOFU 정책 (known_hosts 파일 TODO)
+- **Credential**: OS 자격증명 관리자만 사용, config 평문 미저장
 - **Config export**: 비밀번호 미포함
-- **SOCKS5**: 입력 검증 (method 수, 도메인, 주소 타입)
+- **SOCKS5**: auth method 수 제한, 빈 도메인 거부
 
-## 11. Known Limitations
+## Known Limitations
 
-| 항목 | 상태 | 비고 |
-|------|------|------|
-| Host key known_hosts 파일 | TOFU만 | 실제 파일 읽기/쓰기 미구현, 구조는 준비됨 |
-| Auto-reconnect | 수동만 | `reconnect` 커맨드 존재, 자동 지수 백오프 미구현 |
-| Rust 트레이 i18n | 한국어 고정 | 프론트엔드 i18n은 ko/en 지원 |
+| 항목 | 비고 |
+|------|------|
+| Host key known_hosts 파일 | TOFU만 구현, 파일 읽기/쓰기 미구현 |
+| Auto-reconnect 백오프 | 수동 `reconnect` 커맨드만 제공 |
+| Rust 트레이 i18n | "창 열기"/"종료" 한국어 고정 (프론트는 ko/en 전환) |

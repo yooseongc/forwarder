@@ -6,14 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
-import { useLocale, type Locale } from "@/i18n";
+import { t, useLocale, type Locale } from "@/i18n";
 import { Download, Upload, Sun, Moon, Monitor, ArrowLeft, Globe } from "lucide-react";
-
-const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
-  { value: "light", label: "라이트", icon: <Sun className="size-4" /> },
-  { value: "dark", label: "다크", icon: <Moon className="size-4" /> },
-  { value: "system", label: "시스템", icon: <Monitor className="size-4" /> },
-];
 
 interface Props {
   onClose?: () => void;
@@ -26,13 +20,26 @@ export default function SettingsView({ onClose }: Props) {
   const { theme, setTheme } = useTheme();
   const { locale, setLocale } = useLocale();
 
+  const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
+    { value: "light", label: t("theme.light"), icon: <Sun className="size-4" /> },
+    { value: "dark", label: t("theme.dark"), icon: <Moon className="size-4" /> },
+    { value: "system", label: t("theme.system"), icon: <Monitor className="size-4" /> },
+  ];
+
   useEffect(() => {
-    api.getAutostartEnabled().then(setAutostart).catch(() => {}).finally(() => setLoading(false));
+    api.getAutostartEnabled()
+      .then(setAutostart)
+      .catch((e) => console.error("Failed to get autostart:", e))
+      .finally(() => setLoading(false));
   }, []);
 
   const toggleAutostart = async (enabled: boolean) => {
-    try { await api.setAutostartEnabled(enabled); setAutostart(enabled); }
-    catch (e) { console.error("Failed to toggle autostart:", e); }
+    try {
+      await api.setAutostartEnabled(enabled);
+      setAutostart(enabled);
+    } catch (e) {
+      console.error("Failed to toggle autostart:", e);
+    }
   };
 
   const handleExport = async () => {
@@ -41,21 +48,31 @@ export default function SettingsView({ onClose }: Props) {
       const json = await api.exportConfig();
       const blob = new Blob([json], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = "forwarder-config.json"; a.click();
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "forwarder-config.json";
+      a.click();
       URL.revokeObjectURL(url);
-      setMsg({ text: "설정을 내보냈습니다.", error: false });
-    } catch (e) { setMsg({ text: `내보내기 실패: ${extractErrorMessage(e)}`, error: true }); }
+      setMsg({ text: t("settings.exported"), error: false });
+    } catch (e) {
+      setMsg({ text: `${t("settings.exportFailed")}: ${extractErrorMessage(e)}`, error: true });
+    }
   };
 
   const handleImport = () => {
-    const input = document.createElement("input"); input.type = "file"; input.accept = ".json";
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
     input.onchange = async () => {
-      const file = input.files?.[0]; if (!file) return;
+      const file = input.files?.[0];
+      if (!file) return;
       try {
         setMsg(null);
         await api.importConfig(await file.text());
-        setMsg({ text: "설정을 가져왔습니다.", error: false });
-      } catch (e) { setMsg({ text: `가져오기 실패: ${extractErrorMessage(e)}`, error: true }); }
+        setMsg({ text: t("settings.imported"), error: false });
+      } catch (e) {
+        setMsg({ text: `${t("settings.importFailed")}: ${extractErrorMessage(e)}`, error: true });
+      }
     };
     input.click();
   };
@@ -71,12 +88,12 @@ export default function SettingsView({ onClose }: Props) {
               <ArrowLeft className="size-4" />
             </Button>
           )}
-          <h2 className="text-lg font-semibold">설정</h2>
+          <h2 className="text-lg font-semibold">{t("settings.title")}</h2>
         </div>
 
         {/* Theme */}
         <div className="space-y-3">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">테마</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("theme.title")}</h3>
           <Card>
             <CardContent className="p-4">
               <div className="flex gap-2">
@@ -98,7 +115,7 @@ export default function SettingsView({ onClose }: Props) {
 
         {/* Language */}
         <div className="space-y-3">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">언어 / Language</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("language.title")}</h3>
           <Card>
             <CardContent className="p-4">
               <div className="flex gap-2">
@@ -123,15 +140,15 @@ export default function SettingsView({ onClose }: Props) {
 
         {/* General */}
         <div className="space-y-3">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">일반</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("settings.general")}</h3>
           <Card>
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center gap-3">
                 <Switch checked={autostart} onCheckedChange={toggleAutostart} />
-                <Label>Windows 시작 시 자동 실행</Label>
+                <Label>{t("settings.autostart")}</Label>
               </div>
               <p className="text-xs text-muted-foreground pl-11">
-                활성화하면 Windows 로그인 시 트레이에서 자동 시작됩니다.
+                {t("settings.autostartDesc")}
               </p>
             </CardContent>
           </Card>
@@ -139,15 +156,15 @@ export default function SettingsView({ onClose }: Props) {
 
         {/* Data */}
         <div className="space-y-3">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">데이터</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("settings.data")}</h3>
           <Card>
             <CardContent className="p-4 space-y-3">
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleExport}><Download /> 내보내기</Button>
-                <Button variant="outline" size="sm" onClick={handleImport}><Upload /> 가져오기</Button>
+                <Button variant="outline" size="sm" onClick={handleExport}><Download /> {t("settings.export")}</Button>
+                <Button variant="outline" size="sm" onClick={handleImport}><Upload /> {t("settings.import")}</Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                프로파일 설정을 JSON으로 내보내거나 가져옵니다. 비밀번호는 포함되지 않습니다.
+                {t("settings.importExportDesc")}
               </p>
               {msg && (
                 <p className={`text-xs ${msg.error ? "text-destructive" : "text-green-400"}`}>{msg.text}</p>
