@@ -164,6 +164,27 @@ pub async fn open_key_file_dialog(app: AppHandle) -> CmdResult<Option<String>> {
     rx.recv().map_err(|e| AppError::internal(e.to_string()))
 }
 
+// ── Ping ──
+
+#[tauri::command]
+pub async fn ping_host(host: String, port: u16) -> CmdResult<u64> {
+    use std::time::Instant;
+    use tokio::net::TcpStream;
+
+    let addr = format!("{}:{}", host, port);
+    let start = Instant::now();
+    match tokio::time::timeout(
+        tokio::time::Duration::from_secs(5),
+        TcpStream::connect(&addr),
+    )
+    .await
+    {
+        Ok(Ok(_)) => Ok(start.elapsed().as_millis() as u64),
+        Ok(Err(e)) => Err(AppError::connection_failed(format!("Connection refused: {}", e))),
+        Err(_) => Err(AppError::connection_failed("Timeout (5s)")),
+    }
+}
+
 // ── Config import/export ──
 
 #[tauri::command]

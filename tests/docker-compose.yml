@@ -4,3 +4,5 @@ services:
     ports:
       - "2222:22"
       - "9999:9999"
+      # Note: 8080 is NOT exposed to host — only reachable via SSH tunnel
+      # This is intentional: to test that tunnels actually work

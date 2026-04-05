@@ -27,6 +27,8 @@ export const api = {
   reconnect: (id: string) => invoke("reconnect_profile", { id }),
   enableTunnel: (profileId: string, ruleId: string) =>
     invoke("enable_tunnel", { profileId, ruleId }),
+  pingHost: (host: string, port: number) =>
+    invoke<number>("ping_host", { host, port }),
   exportConfig: () => invoke<string>("export_config"),
   importConfig: (json: string) => invoke("import_config", { json }),
 };

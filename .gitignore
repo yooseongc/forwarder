@@ -12,7 +12,14 @@ src-tauri/target/
 # OS
 Thumbs.db
 .DS_Store
+*.stackdump
 
 # Env
 .env
 .env.*
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Test SSH keys (keep .pub and authorized_keys)
+tests/fixtures/test_key
