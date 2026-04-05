@@ -1,0 +1,6 @@
+services:
+  ssh-server:
+    build: ./ssh-server
+    ports:
+      - "2222:22"
+      - "9999:9999"
