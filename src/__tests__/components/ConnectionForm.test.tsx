@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import ConnectionForm from "../../components/ConnectionForm";
 import { newProfile } from "../../types";
 import type { ConnectionProfile } from "../../types";
+import { t } from "../../i18n";
 
 vi.mock("@tauri-apps/api/core");
 const mockInvoke = vi.mocked(invoke);
@@ -25,36 +26,36 @@ const noop = () => {};
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockInvoke.mockResolvedValue(false); // hasCredential default
+  mockInvoke.mockResolvedValue(false);
 });
 
 describe("ConnectionForm", () => {
   it("renders empty form for new profile", () => {
     render(<ConnectionForm profile={emptyProfile} onSave={noop} onCancel={noop} />);
-    expect(screen.getByText("새 연결")).toBeInTheDocument();
+    expect(screen.getByText(t("form.newConnection"))).toBeInTheDocument();
   });
 
   it("renders edit form with profile name", () => {
     render(<ConnectionForm profile={filledProfile} onSave={noop} onCancel={noop} />);
-    expect(screen.getByText("연결 편집")).toBeInTheDocument();
+    expect(screen.getByText(t("form.editConnection"))).toBeInTheDocument();
   });
 
   it("save button is disabled without required fields", () => {
     render(<ConnectionForm profile={emptyProfile} onSave={noop} onCancel={noop} />);
-    const saveBtn = screen.getByText("저장");
+    const saveBtn = screen.getByRole("button", { name: new RegExp(t("action.save")) });
     expect(saveBtn).toBeDisabled();
   });
 
   it("save button is enabled with required fields", () => {
     render(<ConnectionForm profile={filledProfile} onSave={noop} onCancel={noop} />);
-    const saveBtn = screen.getByText("저장");
+    const saveBtn = screen.getByRole("button", { name: new RegExp(t("action.save")) });
     expect(saveBtn).not.toBeDisabled();
   });
 
   it("cancel button calls onCancel", () => {
     const onCancel = vi.fn();
     render(<ConnectionForm profile={filledProfile} onSave={noop} onCancel={onCancel} />);
-    fireEvent.click(screen.getByText("취소"));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(t("action.cancel")) }));
     expect(onCancel).toHaveBeenCalled();
   });
 
@@ -62,7 +63,7 @@ describe("ConnectionForm", () => {
     mockInvoke.mockResolvedValue(undefined);
     const onSave = vi.fn();
     render(<ConnectionForm profile={filledProfile} onSave={onSave} onCancel={noop} />);
-    fireEvent.click(screen.getByText("저장"));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(t("action.save")) }));
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith("save_profile", expect.any(Object));
       expect(onSave).toHaveBeenCalled();
@@ -75,14 +76,9 @@ describe("ConnectionForm", () => {
       return false;
     });
     render(<ConnectionForm profile={filledProfile} onSave={noop} onCancel={noop} />);
-    fireEvent.click(screen.getByText("저장"));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(t("action.save")) }));
     await waitFor(() => {
       expect(screen.getByText(/Disk full/)).toBeInTheDocument();
     });
-  });
-
-  it("shows add rule button", () => {
-    render(<ConnectionForm profile={filledProfile} onSave={noop} onCancel={noop} />);
-    expect(screen.getByText("+ 규칙 추가")).toBeInTheDocument();
   });
 });

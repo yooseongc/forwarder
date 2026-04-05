@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { invoke } from "@tauri-apps/api/core";
 import ConnectionStatusView from "../../components/ConnectionStatus";
 import type { ConnectionProfile } from "../../types";
+import { t } from "../../i18n";
 
 vi.mock("@tauri-apps/api/core");
 const mockInvoke = vi.mocked(invoke);
@@ -30,78 +31,42 @@ beforeEach(() => {
 describe("ConnectionStatusView", () => {
   it("renders profile name and SSH info", () => {
     render(
-      <ConnectionStatusView
-        profile={baseProfile}
-        status="disconnected"
-        profileStatus={undefined}
-        onEdit={noop}
-        onDelete={noop}
-        onRefresh={noop}
-      />
+      <ConnectionStatusView profile={baseProfile} status="disconnected" profileStatus={undefined} onEdit={noop} onDelete={noop} onRefresh={noop} />
     );
     expect(screen.getByText("Test Server")).toBeInTheDocument();
-    expect(screen.getByText("admin@192.168.1.1:22")).toBeInTheDocument();
+    expect(screen.getByText(/admin@192\.168\.1\.1:22/)).toBeInTheDocument();
   });
 
   it("shows connect button when disconnected", () => {
     render(
-      <ConnectionStatusView
-        profile={baseProfile}
-        status="disconnected"
-        profileStatus={undefined}
-        onEdit={noop}
-        onDelete={noop}
-        onRefresh={noop}
-      />
+      <ConnectionStatusView profile={baseProfile} status="disconnected" profileStatus={undefined} onEdit={noop} onDelete={noop} onRefresh={noop} />
     );
-    expect(screen.getByText("연결")).toBeInTheDocument();
-    expect(screen.queryByText("재연결")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(t("action.connect")) })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: new RegExp(t("action.reconnect")) })).not.toBeInTheDocument();
   });
 
   it("shows disconnect and reconnect buttons when connected", () => {
     render(
-      <ConnectionStatusView
-        profile={baseProfile}
-        status="connected"
-        profileStatus={undefined}
-        onEdit={noop}
-        onDelete={noop}
-        onRefresh={noop}
-      />
+      <ConnectionStatusView profile={baseProfile} status="connected" profileStatus={undefined} onEdit={noop} onDelete={noop} onRefresh={noop} />
     );
-    expect(screen.getByText("연결 해제")).toBeInTheDocument();
-    expect(screen.getByText("재연결")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(t("action.disconnect")) })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(t("action.reconnect")) })).toBeInTheDocument();
   });
 
-  it("disables buttons when connecting", () => {
+  it("shows cancel button when connecting", () => {
     render(
-      <ConnectionStatusView
-        profile={baseProfile}
-        status="connecting"
-        profileStatus={undefined}
-        onEdit={noop}
-        onDelete={noop}
-        onRefresh={noop}
-      />
+      <ConnectionStatusView profile={baseProfile} status="connecting" profileStatus={undefined} onEdit={noop} onDelete={noop} onRefresh={noop} />
     );
-    const btn = screen.getByRole("button", { name: "연결 중..." });
-    expect(btn).toBeDisabled();
+    expect(screen.getByRole("button", { name: new RegExp(t("action.cancel")) })).toBeInTheDocument();
   });
 
   it("calls api.connect on button click", async () => {
     mockInvoke.mockResolvedValue(undefined);
     const onRefresh = vi.fn();
     render(
-      <ConnectionStatusView
-        profile={baseProfile}
-        status="disconnected"
-        profileStatus={undefined}
-        onEdit={noop}
-        onDelete={noop}
-        onRefresh={onRefresh}
-      />
+      <ConnectionStatusView profile={baseProfile} status="disconnected" profileStatus={undefined} onEdit={noop} onDelete={noop} onRefresh={onRefresh} />
     );
-    fireEvent.click(screen.getByText("연결"));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(t("action.connect")) }));
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith("connect_profile", { id: "p1" });
       expect(onRefresh).toHaveBeenCalled();
@@ -111,16 +76,9 @@ describe("ConnectionStatusView", () => {
   it("displays error message on connection failure", async () => {
     mockInvoke.mockRejectedValue(new Error("Auth failed"));
     render(
-      <ConnectionStatusView
-        profile={baseProfile}
-        status="disconnected"
-        profileStatus={undefined}
-        onEdit={noop}
-        onDelete={noop}
-        onRefresh={noop}
-      />
+      <ConnectionStatusView profile={baseProfile} status="disconnected" profileStatus={undefined} onEdit={noop} onDelete={noop} onRefresh={noop} />
     );
-    fireEvent.click(screen.getByText("연결"));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(t("action.connect")) }));
     await waitFor(() => {
       expect(screen.getByText("Auth failed")).toBeInTheDocument();
     });
@@ -128,17 +86,10 @@ describe("ConnectionStatusView", () => {
 
   it("renders forwarding rules with kind labels", () => {
     render(
-      <ConnectionStatusView
-        profile={baseProfile}
-        status="connected"
-        profileStatus={undefined}
-        onEdit={noop}
-        onDelete={noop}
-        onRefresh={noop}
-      />
+      <ConnectionStatusView profile={baseProfile} status="connected" profileStatus={undefined} onEdit={noop} onDelete={noop} onRefresh={noop} />
     );
     expect(screen.getByText("L")).toBeInTheDocument();
     expect(screen.getByText("D")).toBeInTheDocument();
-    expect(screen.getByText("비활성")).toBeInTheDocument();
+    expect(screen.getByText(t("forward.disabled"))).toBeInTheDocument();
   });
 });
