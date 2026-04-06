@@ -4,7 +4,7 @@
 
 ```bash
 cargo check            # 타입 체크
-cargo test --lib       # 유닛 테스트 (60개)
+cargo test --lib       # 유닛 테스트 (70개)
 cargo test --test ssh_integration  # SSH 통합 (Docker 필요, 4개)
 cargo build --release  # 릴리스 빌드
 ```
@@ -17,7 +17,7 @@ cargo build --release  # 릴리스 빌드
 - `--minimized` 인자 감지 → 창 숨김
 - `disconnect_all`: 종료 시 전체 SSH 세션 정리
 
-### commands.rs — Tauri IPC (18 commands)
+### commands.rs — Tauri IPC (20 commands)
 Profile CRUD: `get_profiles`, `save_profile`, `delete_profile`
 Connection: `connect_profile`, `disconnect_profile`, `reconnect_profile`
 Tunnel: `enable_tunnel`
@@ -27,22 +27,29 @@ Autostart: `get_autostart_enabled`, `set_autostart_enabled`
 File: `open_key_file_dialog`
 Network: `ping_host`
 Config: `export_config`, `import_config`
+Host key: `reset_host_key`, `reset_all_host_keys`
 
 모두 `Result<T, AppError>` 반환. `do_connect()` 공용 헬퍼 (커맨드 + auto-connect 공유).
 Connection state race 방지: SSH 연결 후 재잠금 시 `Connecting` 상태 검증.
-Health check: 10s 주기 `is_closed()` 감시 → 끊김 시 Error emit.
+Health check: 10s 주기 `is_closed()` 감시 → 끊김 시 auto-reconnect (지수 백오프, 최대 5회) 또는 Error emit.
 
 ### error.rs — 구조화된 에러
 `AppError { code: ErrorCode, message: String }` (Serialize)
-- ErrorCode: PROFILE_NOT_FOUND / AUTH_FAILED / CONNECTION_FAILED / TUNNEL_BIND_FAILED / TUNNEL_UNSUPPORTED / CONFIG_ERROR / CREDENTIAL_ERROR / INTERNAL
+- ErrorCode: PROFILE_NOT_FOUND / AUTH_FAILED / CONNECTION_FAILED / TUNNEL_BIND_FAILED / TUNNEL_UNSUPPORTED / CONFIG_ERROR / CREDENTIAL_ERROR / HOST_KEY_MISMATCH / INTERNAL
 
 ### state.rs — 런타임 상태
 - `AppState` (Clone): `Arc<Mutex<HashMap<String, ConnectionState>>>`
 - `ConnectionState`: 상태 전이 메서드 (`new_connecting`, `set_connected`, `set_error`, `set_disconnected`)
 - `TunnelError`: rule_id + message
 
+### ssh/known_hosts.rs — 호스트 키 검증
+- `%APPDATA%/forwarder/known_hosts` 파일 관리 (OpenSSH 호환 형식)
+- `verify_or_store`: TOFU — 최초 접속 시 키 저장, 이후 변경 감지
+- `remove_host_key` / `clear_all`: 사용자 초기화
+- `KNOWN_HOSTS_LOCK` (static Mutex) 동시 접근 보호
+
 ### ssh/session.rs — SSH 클라이언트
-- `ClientHandler`: TOFU 기반 `check_server_key`, `server_channel_open_forwarded_tcpip` (역방향 프록시)
+- `ClientHandler`: known_hosts 기반 `check_server_key` (TOFU + 변경 감지), `server_channel_open_forwarded_tcpip` (역방향 프록시)
 - `SshSession::connect(profile, remote_rules)`:
   - 인증 (password / keyFile / keyFileWithPassphrase)
   - Remote forwarding 사전 등록 (`tcpip_forward` on `&mut Handle` before Arc wrap)
@@ -72,7 +79,7 @@ Health check: 10s 주기 `is_closed()` 감시 → 끊김 시 Error emit.
 `keyring` crate, 서비스명 `ssh-forwarder`, 키 = profile ID.
 테스트는 각 테스트마다 고유 키 사용 (병렬 실행 안전).
 
-## Test Structure (60 유닛 + 4 통합)
+## Test Structure (70 유닛 + 4 통합)
 
 | 모듈 | 수 | 내용 |
 |------|---|------|
@@ -81,6 +88,7 @@ Health check: 10s 주기 `is_closed()` 감시 → 끊김 시 Error emit.
 | ssh/types.rs | 5 | ConnectionStatus, TunnelStatus 직렬화 |
 | state.rs | 5 | 상태 전이, AppState, TunnelError |
 | config/store.rs | 7 | CRUD, 손상 복구, 배치, CONFIG_LOCK |
+| ssh/known_hosts.rs | 10 | 호스트 키 CRUD, 검증, 변경 감지, 초기화 |
 | ssh/key_format.rs | 18 | 포맷 감지, EC PEM/PPK 디코딩, hex/SSH reader |
 | ssh/socks5.rs | 8 | SOCKS5 파싱 (IPv4/IPv6/Domain + 에러) |
 | credential.rs | 5 | save/get/delete/has/overwrite (고유 키) |

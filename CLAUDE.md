@@ -18,7 +18,7 @@ npx tsc --noEmit
 cd src-tauri && cargo check
 
 # Test
-cd src-tauri && cargo test --lib                    # Rust 유닛 (60개)
+cd src-tauri && cargo test --lib                    # Rust 유닛 (70개)
 cd src-tauri && cargo test --test ssh_integration   # SSH 통합 (4개, Docker 필요)
 npm test                                            # Vitest (43개)
 
@@ -38,7 +38,7 @@ forwarder/
 ├── src-tauri/          # Rust 백엔드 (Tauri v2)
 │   ├── src/
 │   │   ├── lib.rs          # 앱 진입점, 트레이, single-instance, --minimized
-│   │   ├── commands.rs     # Tauri IPC 커맨드 (18개)
+│   │   ├── commands.rs     # Tauri IPC 커맨드 (20개)
 │   │   ├── error.rs        # AppError (code + message)
 │   │   ├── state.rs        # AppState, ConnectionState
 │   │   ├── credential.rs   # Windows Credential Manager
@@ -54,7 +54,7 @@ forwarder/
 │   ├── lib/                # shadcn utils (cn)
 │   └── __tests__/          # Vitest 테스트
 ├── tests/              # Docker SSH 서버 (openssh + python http + socat echo)
-└── docs/               # 설계 문서 + 스타일 가이드
+└── docs/               # 설계 문서 + 스타일 가이드 + 트러블슈팅
 ```
 
 ## Key Conventions
@@ -79,6 +79,7 @@ Frontend api.foo() → Tauri invoke → commands.rs → ssh/session.rs (russh)
                                                 → credential.rs (keyring)
 
 State change  → app.emit("connection-status-changed") → Frontend listener
-Health check  → 10s is_closed() → "Connection lost" emit
+Health check  → 10s is_closed() → "Connection lost" emit → auto-reconnect (if enabled)
+Host key      → known_hosts verify → Trusted / New (TOFU) / Changed (block)
 Error         → Result<T, AppError> → { code, message }
 ```

@@ -33,7 +33,7 @@ npm run test:watch   # 감시 모드
 - `ko.ts` / `en.ts`: 한국어/영어 메시지 (동일 키 구조)
 
 ### hooks/
-- **useTauri.ts**: `api` 객체 — 모든 Tauri `invoke()` 래퍼 (18개 커맨드), `onStatusChange()` 이벤트 구독
+- **useTauri.ts**: `api` 객체 — 모든 Tauri `invoke()` 래퍼 (20개 커맨드), `onStatusChange()` 이벤트 구독
 - **useConnections.ts**: 프로파일 + 실시간 상태 관리 (`connection-status-changed` 이벤트 구독)
 - **useTheme.ts**: 라이트/다크/시스템 테마 전환, `.dark` 클래스 토글, localStorage 저장
 
@@ -48,7 +48,8 @@ npm run test:watch   # 감시 모드
   - Local/Remote에 따른 **동적 라벨** (로컬 바인드 ↔ 서버 바인드, 원격 대상 ↔ 로컬 대상)
   - **Swap 버튼** (바인드/대상 교체)
   - 힌트 텍스트 (어느 쪽 기준인지 표시)
-- **SettingsView.tsx**: 테마 / 언어 / 자동시작 / 설정 내보내기/가져오기
+- **SettingsView.tsx**: 테마 / 언어 / 자동시작 / 설정 내보내기/가져오기 / 호스트 키 초기화
+- **HelpDialog.tsx**: 사용 가이드 다이얼로그 (기본 사용법 / 인증 방식 / 포워딩 유형)
 - **ui/**: shadcn/ui 컴포넌트들
 
 ### lib/utils.ts
