@@ -97,6 +97,33 @@ export const ko = {
   "tray.show": "창 열기",
   "tray.quit": "종료",
 
+  // Help / hints (field-level)
+  "help.name": "이 연결을 구분할 표시 이름",
+  "help.host": "SSH 서버의 IP 주소 또는 도메인",
+  "help.port": "SSH 포트 (기본: 22)",
+  "help.username": "SSH 로그인 사용자명",
+  "help.authPassword": "서버 비밀번호로 인증합니다",
+  "help.authKeyFile": "개인키 파일(.pem, .ppk, OpenSSH)로 인증합니다",
+  "help.authKeyFilePassphrase": "암호가 설정된 개인키 파일로 인증합니다",
+  "help.forwardLocal": "로컬 포트로 들어온 트래픽을 SSH 터널을 통해 원격 서버로 전달합니다",
+  "help.forwardRemote": "원격 서버 포트로 들어온 트래픽을 SSH 터널을 통해 로컬로 전달합니다",
+  "help.forwardDynamic": "SOCKS5 프록시를 열어 모든 트래픽을 SSH 터널로 라우팅합니다",
+
+  // Help dialog
+  "help.title": "사용 가이드",
+  "help.close": "닫기",
+  "help.gettingStarted": "기본 사용법",
+  "help.gettingStartedContent": "1. 좌측 사이드바의 + 버튼으로 새 연결 프로파일을 추가합니다.\n2. 서버 주소, 포트, 사용자명, 인증 방식을 입력합니다.\n3. 필요한 포워딩 규칙을 추가합니다.\n4. 저장 후 연결 버튼을 눌러 SSH 터널을 시작합니다.\n5. 연결 해제는 상태 화면에서 할 수 있으며, 앱을 닫으면 트레이로 최소화됩니다.",
+  "help.authMethods": "인증 방식",
+  "help.authMethodsContent": "• 비밀번호: SSH 서버의 비밀번호로 인증합니다. 비밀번호는 Windows 자격 증명 관리자에 안전하게 저장됩니다.\n• 키 파일: OpenSSH, PEM, PuTTY PPK(v2/v3) 형식의 개인키를 지원합니다.\n• 키 파일 + 암호: 암호로 보호된 개인키 파일을 사용합니다. 암호는 Windows 자격 증명 관리자에 저장됩니다.",
+  "help.forwardingTypes": "포워딩 유형",
+  "help.forwardingLocal": "Local (로컬 → 원격)",
+  "help.forwardingLocalDesc": "내 컴퓨터의 포트를 SSH 서버를 경유하여 원격 서버로 연결합니다.\n예: 로컬 8080 → SSH → 원격 DB 서버 3306\n용도: 원격 데이터베이스, 내부 웹 서비스 접근",
+  "help.forwardingRemote": "Remote (원격 → 로컬)",
+  "help.forwardingRemoteDesc": "SSH 서버의 포트를 내 컴퓨터로 연결합니다.\n예: SSH 서버 9090 → SSH → 내 로컬 3000\n용도: 외부에서 로컬 개발 서버 접근, 웹훅 수신",
+  "help.forwardingDynamic": "Dynamic (SOCKS5 프록시)",
+  "help.forwardingDynamicDesc": "로컬에 SOCKS5 프록시를 열어 모든 트래픽을 SSH 서버를 통해 라우팅합니다.\n예: 로컬 1080 → SSH → 인터넷\n용도: 브라우저 프록시, 네트워크 우회",
+
   // Misc
   "action.addConnection": "새 연결 추가",
   "error.unknown": "알 수 없는 오류",

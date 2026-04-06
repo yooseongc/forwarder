@@ -60,6 +60,9 @@ export default function ForwardingRuleRow({ rule, onChange, onRemove }: Props) {
             <X className="size-3.5" />
           </Button>
         </div>
+        <p className="text-[11px] text-muted-foreground/70 -mt-1">
+          {isDynamic ? t("help.forwardDynamic") : isRemote ? t("help.forwardRemote") : t("help.forwardLocal")}
+        </p>
 
         {/* Bind + Remote fields */}
         {isDynamic ? (

@@ -90,6 +90,33 @@ export const en: Messages = {
   "tray.show": "Show Window",
   "tray.quit": "Quit",
 
+  // Help / hints (field-level)
+  "help.name": "Display name to identify this connection",
+  "help.host": "IP address or domain of the SSH server",
+  "help.port": "SSH port (default: 22)",
+  "help.username": "SSH login username",
+  "help.authPassword": "Authenticate with server password",
+  "help.authKeyFile": "Authenticate with a private key file (.pem, .ppk, OpenSSH)",
+  "help.authKeyFilePassphrase": "Authenticate with a passphrase-protected private key file",
+  "help.forwardLocal": "Forward local port traffic through SSH tunnel to the remote server",
+  "help.forwardRemote": "Forward remote server port traffic through SSH tunnel to local host",
+  "help.forwardDynamic": "Open a SOCKS5 proxy that routes all traffic through the SSH tunnel",
+
+  // Help dialog
+  "help.title": "User Guide",
+  "help.close": "Close",
+  "help.gettingStarted": "Getting Started",
+  "help.gettingStartedContent": "1. Click the + button in the sidebar to create a new connection profile.\n2. Enter the server address, port, username, and authentication method.\n3. Add forwarding rules as needed.\n4. Save and click Connect to start the SSH tunnel.\n5. Disconnect from the status view. Closing the window minimizes to tray.",
+  "help.authMethods": "Authentication Methods",
+  "help.authMethodsContent": "• Password: Authenticate with the SSH server password. Passwords are securely stored in Windows Credential Manager.\n• Key File: Supports OpenSSH, PEM, and PuTTY PPK (v2/v3) private key formats.\n• Key File + Passphrase: Use a passphrase-protected private key. The passphrase is stored in Windows Credential Manager.",
+  "help.forwardingTypes": "Forwarding Types",
+  "help.forwardingLocal": "Local (Local → Remote)",
+  "help.forwardingLocalDesc": "Forwards a local port through the SSH server to a remote destination.\nExample: Local 8080 → SSH → Remote DB 3306\nUse: Access remote databases, internal web services",
+  "help.forwardingRemote": "Remote (Remote → Local)",
+  "help.forwardingRemoteDesc": "Forwards a port on the SSH server back to your local machine.\nExample: SSH Server 9090 → SSH → Local 3000\nUse: Expose local dev servers, receive webhooks",
+  "help.forwardingDynamic": "Dynamic (SOCKS5 Proxy)",
+  "help.forwardingDynamicDesc": "Opens a local SOCKS5 proxy that routes all traffic through the SSH server.\nExample: Local 1080 → SSH → Internet\nUse: Browser proxy, network bypass",
+
   "action.addConnection": "Add new connection",
   "error.unknown": "Unknown error",
 };

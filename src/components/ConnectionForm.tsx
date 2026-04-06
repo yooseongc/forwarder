@@ -109,18 +109,22 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
               <div className="space-y-1.5">
                 <Label htmlFor="name">{t("form.name")}</Label>
                 <Input id="name" value={profile.name} onChange={(e) => update({ name: e.target.value })} placeholder="My Server" />
+                <p className="text-[11px] text-muted-foreground/70">{t("help.name")}</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="username">{t("form.username")}</Label>
                 <Input id="username" value={profile.username} onChange={(e) => update({ username: e.target.value })} placeholder="root" />
+                <p className="text-[11px] text-muted-foreground/70">{t("help.username")}</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="host">{t("form.host")}</Label>
                 <Input id="host" value={profile.host} onChange={(e) => update({ host: e.target.value })} placeholder="192.168.1.100" />
+                <p className="text-[11px] text-muted-foreground/70">{t("help.host")}</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="port">{t("form.port")}</Label>
                 <Input id="port" type="number" min="1" max="65535" value={profile.port} onChange={(e) => update({ port: parseInt(e.target.value) || 22 })} />
+                <p className="text-[11px] text-muted-foreground/70">{t("help.port")}</p>
               </div>
             </CardContent>
           </Card>
@@ -143,6 +147,11 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-muted-foreground/70">
+                  {profile.authMethod.type === "password" ? t("help.authPassword")
+                    : profile.authMethod.type === "keyFile" ? t("help.authKeyFile")
+                    : t("help.authKeyFilePassphrase")}
+                </p>
               </div>
 
               {showKey && (

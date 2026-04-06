@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useConnections } from "@/hooks/useConnections";
 import type { ConnectionProfile } from "@/types";
 import { newProfile } from "@/types";
@@ -7,7 +7,8 @@ import ConnectionList from "./ConnectionList";
 import ConnectionForm from "./ConnectionForm";
 import ConnectionStatusView from "./ConnectionStatus";
 import SettingsView from "./SettingsView";
-import { Settings } from "lucide-react";
+import HelpDialog from "./HelpDialog";
+import { Settings, HelpCircle } from "lucide-react";
 import { t } from "@/i18n";
 
 type View =
@@ -19,6 +20,8 @@ type View =
 export default function Layout() {
   const { profiles, statuses, loading, refresh, getStatus } = useConnections();
   const [view, setView] = useState<View>({ type: "empty" });
+  const [showHelp, setShowHelp] = useState(false);
+  const prevViewRef = useRef<View>({ type: "empty" });
 
   const handleSelect = (id: string) => setView({ type: "status", profileId: id });
   const handleAdd = () => setView({ type: "edit", profile: newProfile() });
@@ -64,9 +67,19 @@ export default function Layout() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <div className="h-12 border-b border-border flex items-center justify-end px-4" data-tauri-drag-region>
+        <div className="h-12 border-b border-border flex items-center justify-end px-4 gap-1" data-tauri-drag-region>
           <button
-            onClick={() => setView({ type: "settings" })}
+            onClick={() => setShowHelp(true)}
+            className="p-1.5 rounded-md transition-colors cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted"
+            title={t("help.title")}
+          >
+            <HelpCircle className="size-4" />
+          </button>
+          <button
+            onClick={() => {
+              if (view.type !== "settings") prevViewRef.current = view;
+              setView({ type: "settings" });
+            }}
             className={`p-1.5 rounded-md transition-colors cursor-pointer ${
               view.type === "settings" ? "text-foreground bg-muted" : "text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
@@ -93,8 +106,10 @@ export default function Layout() {
         {view.type === "edit" && (
           <ConnectionForm profile={view.profile} onSave={handleSave} onCancel={handleCancel} />
         )}
-        {view.type === "settings" && <SettingsView onClose={() => setView({ type: "empty" })} />}
+        {view.type === "settings" && <SettingsView onClose={() => setView(prevViewRef.current)} />}
       </div>
+
+      {showHelp && <HelpDialog onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
