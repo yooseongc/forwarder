@@ -34,6 +34,7 @@ export function useConnections() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     refresh();
     onStatusChange((event) => {
       setStatuses((prev) => {
@@ -48,11 +49,16 @@ export function useConnections() {
         return next;
       });
     }).then((unlisten) => {
-      unlistenRef.current = unlisten;
+      if (cancelled) {
+        unlisten();
+      } else {
+        unlistenRef.current = unlisten;
+      }
     }).catch((e) => {
       console.error("Failed to subscribe to status events:", e);
     });
     return () => {
+      cancelled = true;
       unlistenRef.current?.();
     };
   }, [refresh]);

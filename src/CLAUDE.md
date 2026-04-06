@@ -71,5 +71,5 @@ npm run test:watch   # 감시 모드
 
 - **Tailwind CSS v4**: `@import "tailwindcss"` + `@theme` 블록
 - **테마 변수**: `:root` (라이트 기본) + `.dark` 오버라이드, 토큰 기반 (background/foreground/card/muted/accent/destructive/...)
-- **다국어**: `t("key")` 함수로 ko/en 동적 전환 (설정 변경 시 페이지 리로드)
+- **다국어**: `t("key")` 함수로 ko/en 동적 전환 (`LocaleContext` 기반 re-render, 페이지 리로드 없음)
 - **Tauri 드래그**: `[data-tauri-drag-region]` — 윈도우 드래그 영역

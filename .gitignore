@@ -24,3 +24,4 @@ Thumbs.db
 
 # Test SSH keys (keep .pub and authorized_keys)
 tests/fixtures/test_key
+tests/keys

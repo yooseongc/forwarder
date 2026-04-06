@@ -48,6 +48,8 @@ export const ko = {
   "forward.remoteHost": "리모트 호스트",
   "forward.remotePort": "리모트 포트",
   "forward.socks5": "SOCKS5 프록시",
+  "forward.socks5Bind": "바인드 주소 (SOCKS5)",
+  "forward.port": "포트",
   "forward.disabled": "비활성",
 
   // Settings
@@ -94,4 +96,8 @@ export const ko = {
   // Tray (Rust-side, for reference)
   "tray.show": "창 열기",
   "tray.quit": "종료",
+
+  // Misc
+  "action.addConnection": "새 연결 추가",
+  "error.unknown": "알 수 없는 오류",
 } as const;

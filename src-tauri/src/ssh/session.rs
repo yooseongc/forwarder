@@ -258,7 +258,7 @@ async fn load_key_pair(path: &str, passphrase: Option<&str>) -> Result<key::KeyP
     let key_data = tokio::fs::read_to_string(path)
         .await
         .context(format!("Failed to read key file: {}", path))?;
-    Ok(russh_keys::decode_secret_key(&key_data, passphrase)?)
+    super::key_format::decode_key(&key_data, passphrase)
 }
 
 // ── Local forwarding ──
@@ -378,6 +378,8 @@ pub(crate) async fn proxy_channel(
     channel: russh::Channel<client::Msg>,
     mut stream: TcpStream,
 ) -> Result<()> {
+    use tokio::io::AsyncWriteExt;
+
     let channel_stream = channel.into_stream();
     let (mut chan_reader, mut chan_writer) = tokio::io::split(channel_stream);
     let (mut tcp_reader, mut tcp_writer) = stream.split();
@@ -385,9 +387,17 @@ pub(crate) async fn proxy_channel(
     let up = tokio::io::copy(&mut tcp_reader, &mut chan_writer);
     let down = tokio::io::copy(&mut chan_reader, &mut tcp_writer);
 
+    // When one direction completes, shut down the write half of the other
+    // to signal EOF, then let the remaining direction drain.
     tokio::select! {
-        r = up => { r?; }
-        r = down => { r?; }
+        r = up => {
+            r?;
+            let _ = chan_writer.shutdown().await;
+        }
+        r = down => {
+            r?;
+            let _ = tcp_writer.shutdown().await;
+        }
     }
     Ok(())
 }

@@ -19,7 +19,7 @@ export default function ConnectionList({ profiles, selectedId, getStatus, onSele
         <span className="text-sm font-semibold text-sidebar-foreground pointer-events-none tracking-tight">
           SSH Forwarder
         </span>
-        <Button variant="ghost" size="icon-sm" onClick={onAdd} title="새 연결 추가">
+        <Button variant="ghost" size="icon-sm" onClick={onAdd} title={t("action.addConnection")}>
           <Plus className="size-4" />
         </Button>
       </div>

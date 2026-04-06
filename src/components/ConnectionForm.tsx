@@ -186,7 +186,14 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
                     <Button
                       variant="destructive"
                       size="xs"
-                      onClick={async () => { await api.deleteCredential(profile.id); setHasStoredPassword(false); }}
+                      onClick={async () => {
+                        try {
+                          await api.deleteCredential(profile.id);
+                          setHasStoredPassword(false);
+                        } catch (e) {
+                          setSaveError(extractErrorMessage(e));
+                        }
+                      }}
                     >
                       <Trash2 /> {t("form.deleteStoredPassword")}
                     </Button>

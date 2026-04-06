@@ -233,15 +233,32 @@ pub async fn enable_tunnel(
         if conn.status != ConnectionStatus::Connected {
             return Err(AppError::connection_failed("Not connected"));
         }
+        if rule.kind == crate::config::types::ForwardingKind::Remote {
+            return Err(AppError::internal(
+                "Remote forwarding rules cannot be enabled at runtime. Reconnect to apply changes.".to_string(),
+            ));
+        }
         if let Some(ref mut session) = conn.session {
+            // Add tunnel_errors entry for this rule so errors are tracked
+            {
+                let mut errs = conn.tunnel_errors.lock().await;
+                if !errs.iter().any(|t| t.rule_id == rule.id) {
+                    errs.push(crate::state::TunnelError {
+                        rule_id: rule.id.clone(),
+                        message: None,
+                    });
+                }
+            }
             let tunnel_errors = conn.tunnel_errors.clone();
             session.start_single_tunnel(&rule, tunnel_errors).await
                 .map_err(|e| AppError::internal(e.to_string()))?;
-            conn.tunnel_statuses.push(crate::ssh::types::TunnelStatus {
-                rule_id: rule.id.clone(),
-                active: true,
-                error: None,
-            });
+            if !conn.tunnel_statuses.iter().any(|t| t.rule_id == rule.id) {
+                conn.tunnel_statuses.push(crate::ssh::types::TunnelStatus {
+                    rule_id: rule.id.clone(),
+                    active: true,
+                    error: None,
+                });
+            }
         }
     }
     drop(connections);

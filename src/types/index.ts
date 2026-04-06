@@ -173,9 +173,6 @@ export function extractErrorMessage(e: unknown): string {
   if (typeof e === "object" && e !== null) {
     const obj = e as Record<string, unknown>;
     if (typeof obj.message === "string") return obj.message;
-    if (typeof obj.code === "string" && typeof obj.message === "string") {
-      return obj.message;
-    }
   }
-  return "알 수 없는 오류";
+  return "Unknown error";
 }

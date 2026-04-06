@@ -18,7 +18,7 @@ npx tsc --noEmit
 cd src-tauri && cargo check
 
 # Test
-cd src-tauri && cargo test --lib                    # Rust 유닛 (42개)
+cd src-tauri && cargo test --lib                    # Rust 유닛 (60개)
 cd src-tauri && cargo test --test ssh_integration   # SSH 통합 (4개, Docker 필요)
 npm test                                            # Vitest (43개)
 
@@ -43,7 +43,7 @@ forwarder/
 │   │   ├── state.rs        # AppState, ConnectionState
 │   │   ├── credential.rs   # Windows Credential Manager
 │   │   ├── config/         # JSON 설정 영속화
-│   │   └── ssh/            # russh + SOCKS5 + 리버스 프록시
+│   │   └── ssh/            # russh + SOCKS5 + 리버스 프록시 + 키 포맷(PPK/EC PEM)
 │   └── tests/              # Docker SSH 통합 테스트
 ├── src/                # React 프론트엔드
 │   ├── hooks/              # useConnections, useTauri, useTheme

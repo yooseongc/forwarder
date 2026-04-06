@@ -65,11 +65,11 @@ export default function ForwardingRuleRow({ rule, onChange, onRemove }: Props) {
         {isDynamic ? (
           <div className="grid grid-cols-[1fr_100px] gap-2">
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">바인드 주소 (SOCKS5)</Label>
+              <Label className="text-xs text-muted-foreground">{t("forward.socks5Bind")}</Label>
               <Input value={rule.bindAddress} onChange={(e) => update({ bindAddress: e.target.value })} placeholder="127.0.0.1" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">포트</Label>
+              <Label className="text-xs text-muted-foreground">{t("forward.port")}</Label>
               <Input type="number" value={rule.bindPort || ""} onChange={(e) => update({ bindPort: parseInt(e.target.value) || 0 })} placeholder="1080" />
             </div>
           </div>

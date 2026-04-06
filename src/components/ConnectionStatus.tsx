@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ConnectionProfile, ConnectionStatus as Status, ProfileStatus } from "@/types";
 import { AUTH_LABEL, KIND_LABEL, KIND_STYLE, extractErrorMessage, ruleDescription, statusColor, statusLabel } from "@/types";
 import { api } from "@/hooks/useTauri";
@@ -23,6 +23,11 @@ export default function ConnectionStatusView({ profile, status, profileStatus, o
   const isConnecting = status === "connecting";
   const [actionError, setActionError] = useState<string | null>(null);
   const [pingResult, setPingResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    setActionError(null);
+    setPingResult(null);
+  }, [profile.id]);
 
   const handleToggle = async () => {
     try {
@@ -154,7 +159,7 @@ export default function ConnectionStatusView({ profile, status, profileStatus, o
 
         {/* Meta */}
         <div className="text-xs text-muted-foreground space-y-1">
-          <p>인증: {AUTH_LABEL[profile.authMethod.type]}</p>
+          <p>{t("form.auth")}: {AUTH_LABEL[profile.authMethod.type]}</p>
           {profile.autoConnect && <p>{t("form.autoConnect")}</p>}
         </div>
       </div>

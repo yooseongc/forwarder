@@ -4,7 +4,7 @@
 
 ```bash
 cargo check            # 타입 체크
-cargo test --lib       # 유닛 테스트 (42개)
+cargo test --lib       # 유닛 테스트 (60개)
 cargo test --test ssh_integration  # SSH 통합 (Docker 필요, 4개)
 cargo build --release  # 릴리스 빌드
 ```
@@ -52,6 +52,12 @@ Health check: 10s 주기 `is_closed()` 감시 → 끊김 시 Error emit.
 - Local/Dynamic: `tokio::select!` 기반 accept loop (cancel 감시)
 - Remote: keep-alive task가 cancel 시 `cancel_tcpip_forward` 호출
 
+### ssh/key_format.rs — 키 파일 포맷 지원
+- `decode_key`: 포맷 자동 감지 후 적절한 파서로 분기
+- 지원 포맷: OpenSSH, RSA PEM, PKCS#8, SEC1 EC PEM (P-256/P-384), PuTTY PPK v2/v3
+- PPK 암호화: AES-256-CBC (v2: SHA-1 KDF, v3: Argon2id KDF), HMAC MAC 검증
+- 공개키 파일 감지 시 명확한 에러 메시지
+
 ### ssh/socks5.rs — SOCKS5 프록시
 - `handle_client`: negotiate → CONNECT 파싱 → SSH 채널 열기 → proxy
 - 입력 검증: MAX_AUTH_METHODS=255, 빈 도메인 거부
@@ -66,7 +72,7 @@ Health check: 10s 주기 `is_closed()` 감시 → 끊김 시 Error emit.
 `keyring` crate, 서비스명 `ssh-forwarder`, 키 = profile ID.
 테스트는 각 테스트마다 고유 키 사용 (병렬 실행 안전).
 
-## Test Structure (42 유닛 + 4 통합)
+## Test Structure (60 유닛 + 4 통합)
 
 | 모듈 | 수 | 내용 |
 |------|---|------|
@@ -75,6 +81,7 @@ Health check: 10s 주기 `is_closed()` 감시 → 끊김 시 Error emit.
 | ssh/types.rs | 5 | ConnectionStatus, TunnelStatus 직렬화 |
 | state.rs | 5 | 상태 전이, AppState, TunnelError |
 | config/store.rs | 7 | CRUD, 손상 복구, 배치, CONFIG_LOCK |
+| ssh/key_format.rs | 18 | 포맷 감지, EC PEM/PPK 디코딩, hex/SSH reader |
 | ssh/socks5.rs | 8 | SOCKS5 파싱 (IPv4/IPv6/Domain + 에러) |
 | credential.rs | 5 | save/get/delete/has/overwrite (고유 키) |
 | tests/ssh_integration.rs | 4 | password/key 인증, Local forward echo |

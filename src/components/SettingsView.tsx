@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
-import { t, useLocale, type Locale } from "@/i18n";
+import { t, useLocaleContext, type Locale } from "@/i18n";
 import { Download, Upload, Sun, Moon, Monitor, ArrowLeft, Globe } from "lucide-react";
 
 interface Props {
@@ -18,7 +18,7 @@ export default function SettingsView({ onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ text: string; error: boolean } | null>(null);
   const { theme, setTheme } = useTheme();
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale } = useLocaleContext();
 
   const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
     { value: "light", label: t("theme.light"), icon: <Sun className="size-4" /> },
@@ -127,7 +127,7 @@ export default function SettingsView({ onClose }: Props) {
                     key={opt.value}
                     variant={locale === opt.value ? "default" : "outline"}
                     size="sm"
-                    onClick={() => { setLocale(opt.value); window.location.reload(); }}
+                    onClick={() => setLocale(opt.value)}
                   >
                     <Globe className="size-4" />
                     {opt.label}

@@ -46,6 +46,8 @@ export const en: Messages = {
   "forward.remoteHost": "Remote Host",
   "forward.remotePort": "Remote Port",
   "forward.socks5": "SOCKS5 Proxy",
+  "forward.socks5Bind": "Bind Address (SOCKS5)",
+  "forward.port": "Port",
   "forward.disabled": "Disabled",
 
   "settings.title": "Settings",
@@ -87,4 +89,7 @@ export const en: Messages = {
 
   "tray.show": "Show Window",
   "tray.quit": "Quit",
+
+  "action.addConnection": "Add new connection",
+  "error.unknown": "Unknown error",
 };

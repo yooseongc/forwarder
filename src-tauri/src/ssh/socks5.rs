@@ -42,8 +42,8 @@ pub async fn handle_client(
 
 async fn negotiate_auth(stream: &mut TcpStream) -> Result<()> {
     let mut header = [0u8; 2];
-    let n = stream.read(&mut header).await?;
-    if n < 2 || header[0] != SOCKS_VERSION {
+    stream.read_exact(&mut header).await?;
+    if header[0] != SOCKS_VERSION {
         anyhow::bail!("Not a SOCKS5 request");
     }
     let nmethods = header[1] as usize;

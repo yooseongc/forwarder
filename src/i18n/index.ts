@@ -1,6 +1,6 @@
 import { ko } from "./ko";
 import { en } from "./en";
-import { useCallback, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 export type Locale = "ko" | "en";
 
@@ -32,4 +32,15 @@ export function useLocale() {
   }, []);
 
   return { locale, setLocale, t };
+}
+
+// Context-based locale for app-wide reactivity (re-renders entire tree on locale change)
+const LocaleContext = createContext<{ locale: Locale; setLocale: (l: Locale) => void } | null>(null);
+
+export { LocaleContext };
+
+export function useLocaleContext() {
+  const ctx = useContext(LocaleContext);
+  if (!ctx) throw new Error("useLocaleContext must be used within LocaleProvider");
+  return ctx;
 }
