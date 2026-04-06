@@ -19,7 +19,7 @@ export default function ConnectionList({ profiles, selectedId, getStatus, onSele
         <span className="text-sm font-semibold text-sidebar-foreground pointer-events-none tracking-tight">
           SSH Forwarder
         </span>
-        <Button variant="ghost" size="icon-sm" onClick={onAdd} title={t("action.addConnection")}>
+        <Button variant="ghost" size="icon-sm" onClick={onAdd} title={t("action.addConnection")} aria-label={t("action.addConnection")}>
           <Plus className="size-4" />
         </Button>
       </div>
@@ -37,6 +37,7 @@ export default function ConnectionList({ profiles, selectedId, getStatus, onSele
             <button
               key={p.id}
               onClick={() => onSelect(p.id)}
+              aria-current={active ? "true" : undefined}
               className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors cursor-pointer
                 ${active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"

@@ -72,6 +72,7 @@ export default function Layout() {
             onClick={() => setShowHelp(true)}
             className="p-1.5 rounded-md transition-colors cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted"
             title={t("help.title")}
+            aria-label={t("help.title")}
           >
             <HelpCircle className="size-4" />
           </button>
@@ -84,6 +85,7 @@ export default function Layout() {
               view.type === "settings" ? "text-foreground bg-muted" : "text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
             title={t("settings.title")}
+            aria-label={t("settings.title")}
           >
             <Settings className="size-4" />
           </button>

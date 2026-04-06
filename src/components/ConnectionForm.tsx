@@ -96,7 +96,7 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
         </div>
 
         {saveError && (
-          <Card className="border-destructive/30 bg-destructive/10">
+          <Card className="border-destructive/30 bg-destructive/10" role="alert">
             <CardContent className="p-3 text-sm text-destructive">{t("form.saveFailed")}: {saveError}</CardContent>
           </Card>
         )}

@@ -76,7 +76,7 @@ export default function ConnectionStatusView({ profile, status, profileStatus, o
               <p className="text-sm text-muted-foreground">
                 {profile.username}@{profile.host}:{profile.port}
               </p>
-              <Button variant="ghost" size="icon-xs" onClick={handlePing} title="Ping">
+              <Button variant="ghost" size="icon-xs" onClick={handlePing} title="Ping" aria-label="Ping">
                 <Activity className="size-3" />
               </Button>
               {pingResult && (
@@ -124,7 +124,7 @@ export default function ConnectionStatusView({ profile, status, profileStatus, o
 
         {/* Error */}
         {actionError && (
-          <Card className="border-destructive/30 bg-destructive/10">
+          <Card className="border-destructive/30 bg-destructive/10" role="alert">
             <CardContent className="p-3 space-y-2">
               <p className="text-sm text-destructive">{actionError}</p>
               {actionError.includes("Host key") && (

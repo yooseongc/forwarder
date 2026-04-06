@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { t } from "@/i18n";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,8 +33,16 @@ function ForwardTag({ label, color }: { label: string; color: string }) {
 }
 
 export default function HelpDialog({ onClose }: Props) {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose} role="dialog" aria-modal="true" aria-label={t("help.title")}>
       <div
         className="bg-background border border-border rounded-lg shadow-xl w-[560px] max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}

@@ -52,11 +52,11 @@ export default function ForwardingRuleRow({ rule, onChange, onRemove }: Props) {
             </Select>
           </div>
           {!isDynamic && (
-            <Button variant="ghost" size="icon-sm" onClick={swap} title={t("forward.swap")}>
+            <Button variant="ghost" size="icon-sm" onClick={swap} title={t("forward.swap")} aria-label={t("forward.swap")}>
               <ArrowLeftRight className="size-3.5" />
             </Button>
           )}
-          <Button variant="ghost" size="icon-sm" onClick={onRemove} title={t("forward.remove")}>
+          <Button variant="ghost" size="icon-sm" onClick={onRemove} title={t("forward.remove")} aria-label={t("forward.remove")}>
             <X className="size-3.5" />
           </Button>
         </div>
