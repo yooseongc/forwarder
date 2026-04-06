@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicedoc/tauri-docs/master/tauri.conf.json.schema.json",
   "productName": "SSH Forwarder",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "identifier": "com.forwarder.app",
   "build": {
     "beforeDevCommand": "npm run dev",
