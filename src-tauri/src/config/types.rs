@@ -26,6 +26,12 @@ pub struct ConnectionProfile {
     pub forwarding_rules: Vec<ForwardingRule>,
     #[serde(default)]
     pub auto_connect: bool,
+    #[serde(default = "default_true")]
+    pub auto_reconnect: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn default_port() -> u16 {
@@ -63,10 +69,6 @@ pub struct ForwardingRule {
 
 fn default_bind_address() -> String {
     "127.0.0.1".to_string()
-}
-
-fn default_true() -> bool {
-    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

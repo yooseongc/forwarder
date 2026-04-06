@@ -1,3 +1,5 @@
+import { t } from "@/i18n";
+
 // ── Data models (1:1 mapping with Rust types, camelCase) ──
 
 export interface ConnectionProfile {
@@ -9,6 +11,7 @@ export interface ConnectionProfile {
   authMethod: AuthMethod;
   forwardingRules: ForwardingRule[];
   autoConnect: boolean;
+  autoReconnect: boolean;
 }
 
 export type AuthMethod =
@@ -32,6 +35,7 @@ export type ConnectionStatus =
   | "disconnected"
   | "connecting"
   | "connected"
+  | { reconnecting: { attempt: number } }
   | { error: { message: string } };
 
 export interface ProfileStatus {
@@ -61,6 +65,7 @@ export type ErrorCode =
   | "TUNNEL_UNSUPPORTED"
   | "CONFIG_ERROR"
   | "CREDENTIAL_ERROR"
+  | "HOST_KEY_MISMATCH"
   | "INTERNAL";
 
 export interface AppError {
@@ -112,6 +117,7 @@ export function newProfile(): ConnectionProfile {
     authMethod: { type: "password" },
     forwardingRules: [],
     autoConnect: false,
+    autoReconnect: true,
   };
 }
 
@@ -130,17 +136,21 @@ export function newForwardingRule(): ForwardingRule {
 // ── Status helpers ──
 
 export function statusLabel(status: ConnectionStatus): string {
-  if (status === "connected") return "연결됨";
-  if (status === "connecting") return "연결 중...";
-  if (status === "disconnected") return "연결 안됨";
-  if (typeof status === "object" && "error" in status) return `오류: ${status.error.message}`;
-  return "알 수 없음";
+  if (status === "connected") return t("status.connected");
+  if (status === "connecting") return t("status.connecting");
+  if (status === "disconnected") return t("status.disconnected");
+  if (typeof status === "object" && "reconnecting" in status)
+    return `${t("status.reconnecting")} (${status.reconnecting.attempt}/5)`;
+  if (typeof status === "object" && "error" in status)
+    return `${t("status.error")}: ${status.error.message}`;
+  return t("status.unknown");
 }
 
 export function statusColor(status: ConnectionStatus): string {
   if (status === "connected") return "bg-status-connected";
   if (status === "connecting") return "bg-status-connecting";
   if (status === "disconnected") return "bg-status-disconnected";
+  if (typeof status === "object" && "reconnecting" in status) return "bg-status-connecting";
   return "bg-status-error";
 }
 

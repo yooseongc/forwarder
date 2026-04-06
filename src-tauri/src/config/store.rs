@@ -6,7 +6,7 @@ use std::sync::Mutex;
 /// Serialize all config file access to prevent concurrent read-modify-write races.
 static CONFIG_LOCK: Mutex<()> = Mutex::new(());
 
-fn config_dir() -> Result<PathBuf> {
+pub(crate) fn config_dir() -> Result<PathBuf> {
     let dir = if let Ok(override_dir) = std::env::var("FORWARDER_CONFIG_DIR") {
         PathBuf::from(override_dir)
     } else {
@@ -88,12 +88,8 @@ mod tests {
     use super::*;
     use crate::config::types::AuthMethod;
 
-    use std::sync::Mutex as StdMutex;
-    /// Serialize config tests since they share FORWARDER_CONFIG_DIR env var.
-    static TEST_LOCK: StdMutex<()> = StdMutex::new(());
-
     fn with_temp_config<F: FnOnce()>(f: F) {
-        let _lock = TEST_LOCK.lock().unwrap();
+        let _lock = crate::ENV_TEST_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         unsafe { std::env::set_var("FORWARDER_CONFIG_DIR", dir.path()) };
         f();
@@ -110,6 +106,7 @@ mod tests {
             auth_method: AuthMethod::Password,
             forwarding_rules: vec![],
             auto_connect: false,
+            auto_reconnect: true,
         }
     }
 

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::config::store;
@@ -185,6 +186,22 @@ pub async fn ping_host(host: String, port: u16) -> CmdResult<u64> {
     }
 }
 
+// ── Host key management ──
+
+#[tauri::command]
+pub async fn reset_host_key(host: String, port: u16) -> CmdResult {
+    use crate::ssh::known_hosts;
+    known_hosts::remove_host_key(&host, port)
+        .map_err(|e| AppError::internal(e.to_string()))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_all_host_keys() -> CmdResult {
+    use crate::ssh::known_hosts;
+    known_hosts::clear_all().map_err(|e| AppError::internal(e.to_string()))
+}
+
 // ── Config import/export ──
 
 #[tauri::command]
@@ -288,7 +305,13 @@ pub async fn auto_connect_on_startup(app: AppHandle) -> anyhow::Result<()> {
 // ── Internal helpers ──
 
 async fn do_connect(id: &str, app: &AppHandle, state: &State<'_, AppState>) -> CmdResult {
-    let profile = find_profile(id)?;
+    do_connect_inner(id, app, state.inner()).await
+}
+
+async fn do_connect_inner(id: &str, app: &AppHandle, state: &AppState) -> CmdResult {
+    // find_profile uses std::sync::Mutex internally; isolate it in a block
+    // so the guard is dropped before any .await point.
+    let profile = { find_profile(id)? };
 
     {
         let mut connections = state.connections.lock().await;
@@ -297,7 +320,7 @@ async fn do_connect(id: &str, app: &AppHandle, state: &State<'_, AppState>) -> C
             ConnectionState::new_connecting(&profile.forwarding_rules),
         );
     }
-    emit_status(app, id, state).await;
+    emit_status_with(app, id, state).await;
 
     match SshSession::connect(&profile, &profile.forwarding_rules).await {
         Ok(mut session) => {
@@ -316,8 +339,7 @@ async fn do_connect(id: &str, app: &AppHandle, state: &State<'_, AppState>) -> C
                 .await
             {
                 conn.set_error(e.to_string());
-                drop(connections);
-                emit_status(app, id, state).await;
+                emit_status_inner(app, id, &connections);
                 return Err(AppError::connection_failed(e.to_string()));
             }
 
@@ -325,29 +347,14 @@ async fn do_connect(id: &str, app: &AppHandle, state: &State<'_, AppState>) -> C
             let health_handle = session.start_health_check();
             let app_clone = app.clone();
             let id_str = id.to_string();
-            let state_clone = state.inner().clone();
+            let state_clone = state.clone();
             tokio::spawn(async move {
                 health_handle.await.ok();
-                // Connection lost — update state
-                let mut conns = state_clone.connections.lock().await;
-                if let Some(conn) = conns.get_mut(&id_str) {
-                    if conn.status == ConnectionStatus::Connected {
-                        conn.set_error("Connection lost".to_string());
-                        let event = StatusChangeEvent {
-                            profile_id: id_str.clone(),
-                            status: conn.status.clone(),
-                            tunnel_statuses: conn.tunnel_statuses.clone(),
-                        };
-                        if let Err(e) = app_clone.emit("connection-status-changed", event) {
-                            log::warn!("Failed to emit health check event: {}", e);
-                        }
-                    }
-                }
+                on_connection_lost(id_str, app_clone, state_clone).await;
             });
 
             conn.set_connected(session, &profile.forwarding_rules);
-            drop(connections);
-            emit_status(app, id, state).await;
+            emit_status_inner(app, id, &connections);
             Ok(())
         }
         Err(e) => {
@@ -355,11 +362,15 @@ async fn do_connect(id: &str, app: &AppHandle, state: &State<'_, AppState>) -> C
             if let Some(conn) = connections.get_mut(id) {
                 conn.set_error(e.to_string());
             }
-            drop(connections);
-            emit_status(app, id, state).await;
+            emit_status_inner(app, id, &connections);
             Err(AppError::connection_failed(e.to_string()))
         }
     }
+}
+
+async fn emit_status_with(app: &AppHandle, profile_id: &str, state: &AppState) {
+    let connections = state.connections.lock().await;
+    emit_status_inner(app, profile_id, &connections);
 }
 
 fn find_profile(id: &str) -> CmdResult<ConnectionProfile> {
@@ -372,6 +383,14 @@ fn find_profile(id: &str) -> CmdResult<ConnectionProfile> {
 
 async fn emit_status(app: &AppHandle, profile_id: &str, state: &State<'_, AppState>) {
     let connections = state.connections.lock().await;
+    emit_status_inner(app, profile_id, &connections);
+}
+
+fn emit_status_inner(
+    app: &AppHandle,
+    profile_id: &str,
+    connections: &HashMap<String, ConnectionState>,
+) {
     if let Some(conn) = connections.get(profile_id) {
         let event = StatusChangeEvent {
             profile_id: profile_id.to_string(),
@@ -381,5 +400,173 @@ async fn emit_status(app: &AppHandle, profile_id: &str, state: &State<'_, AppSta
         if let Err(e) = app.emit("connection-status-changed", event) {
             log::warn!("Failed to emit connection status event: {}", e);
         }
+    }
+}
+
+/// Reconnect using an already-loaded profile (avoids CONFIG_LOCK in async context).
+/// Returns a health check JoinHandle on success so the caller can wire it.
+async fn try_reconnect(
+    id: &str,
+    app: &AppHandle,
+    state: &AppState,
+    profile: &ConnectionProfile,
+) -> Result<tokio::task::JoinHandle<()>, String> {
+    // Set Connecting state
+    {
+        let mut connections = state.connections.lock().await;
+        connections.insert(
+            id.to_string(),
+            ConnectionState::new_connecting(&profile.forwarding_rules),
+        );
+    }
+    emit_status_with(app, id, state).await;
+
+    match SshSession::connect(profile, &profile.forwarding_rules).await {
+        Ok(mut session) => {
+            let mut connections = state.connections.lock().await;
+            match connections.get_mut(id).map(|c| c.status.clone()) {
+                Some(ConnectionStatus::Connecting) => {}
+                _ => {
+                    session.disconnect();
+                    return Err("Connection state changed during reconnect".into());
+                }
+            }
+            let conn = connections.get_mut(id).unwrap();
+            let tunnel_errors = conn.tunnel_errors.clone();
+            if let Err(e) = session
+                .start_tunnels(&profile.forwarding_rules, tunnel_errors)
+                .await
+            {
+                conn.set_error(e.to_string());
+                emit_status_inner(app, id, &connections);
+                return Err(e.to_string());
+            }
+
+            let health_handle = session.start_health_check();
+            conn.set_connected(session, &profile.forwarding_rules);
+            emit_status_inner(app, id, &connections);
+            Ok(health_handle)
+        }
+        Err(e) => {
+            let mut connections = state.connections.lock().await;
+            if let Some(conn) = connections.get_mut(id) {
+                conn.set_error(e.to_string());
+            }
+            emit_status_inner(app, id, &connections);
+            Err(e.to_string())
+        }
+    }
+}
+
+/// Called when health check detects connection loss.
+/// Triggers auto-reconnect if the profile has it enabled.
+/// Runs as a self-contained loop: reconnect → monitor → reconnect...
+async fn on_connection_lost(id: String, app: AppHandle, state: AppState) {
+    loop {
+        // Set error state
+        {
+            let mut conns = state.connections.lock().await;
+            if let Some(conn) = conns.get_mut(&id) {
+                if conn.status != ConnectionStatus::Connected {
+                    return; // Already disconnected by user
+                }
+                conn.set_error("Connection lost".to_string());
+                emit_status_inner(&app, &id, &conns);
+            } else {
+                return;
+            }
+        }
+
+        // Check if auto-reconnect is enabled
+        let id_clone = id.clone();
+        let profile = match tokio::task::spawn_blocking(move || {
+            store::get_profiles()
+                .ok()
+                .and_then(|ps| ps.into_iter().find(|p| p.id == id_clone))
+        })
+        .await
+        .ok()
+        .flatten()
+        {
+            Some(p) if p.auto_reconnect => p,
+            _ => return,
+        };
+
+        // Auto-reconnect with exponential backoff
+        const MAX_ATTEMPTS: u32 = 5;
+        let mut delay_secs = 1u64;
+        let mut reconnected = false;
+
+        for attempt in 1..=MAX_ATTEMPTS {
+            log::info!(
+                "Auto-reconnect {}/{} for '{}' in {}s",
+                attempt, MAX_ATTEMPTS, profile.name, delay_secs
+            );
+
+            // Set reconnecting status
+            {
+                let mut conns = state.connections.lock().await;
+                match conns.get_mut(&id).map(|c| &c.status) {
+                    Some(ConnectionStatus::Error { .. })
+                    | Some(ConnectionStatus::Reconnecting { .. }) => {
+                        let conn = conns.get_mut(&id).unwrap();
+                        conn.status = ConnectionStatus::Reconnecting { attempt };
+                        emit_status_inner(&app, &id, &conns);
+                    }
+                    _ => return, // User manually disconnected
+                }
+            }
+
+            tokio::time::sleep(tokio::time::Duration::from_secs(delay_secs)).await;
+
+            // Check if still in reconnecting state
+            {
+                let conns = state.connections.lock().await;
+                if !matches!(
+                    conns.get(&id).map(|c| &c.status),
+                    Some(ConnectionStatus::Reconnecting { .. })
+                ) {
+                    return; // User intervened
+                }
+            }
+
+            match try_reconnect(&id, &app, &state, &profile).await {
+                Ok(health_handle) => {
+                    log::info!("Auto-reconnect succeeded for '{}'", profile.name);
+                    // Wait for health check to detect next disconnection
+                    health_handle.await.ok();
+                    reconnected = true;
+                    break; // Break inner loop, outer loop will handle next disconnect
+                }
+                Err(e) => {
+                    log::warn!(
+                        "Auto-reconnect {}/{} failed for '{}': {}",
+                        attempt, MAX_ATTEMPTS, profile.name, e
+                    );
+                }
+            }
+
+            delay_secs = (delay_secs * 2).min(30);
+        }
+
+        if !reconnected {
+            // All attempts exhausted
+            log::error!(
+                "Auto-reconnect gave up after {} attempts for '{}'",
+                MAX_ATTEMPTS, profile.name
+            );
+            let mut conns = state.connections.lock().await;
+            if let Some(conn) = conns.get_mut(&id) {
+                if matches!(conn.status, ConnectionStatus::Reconnecting { .. }) {
+                    conn.set_error(format!(
+                        "Auto-reconnect failed after {} attempts",
+                        MAX_ATTEMPTS
+                    ));
+                    emit_status_inner(&app, &id, &conns);
+                }
+            }
+            return;
+        }
+        // reconnected=true: outer loop continues — will detect next connection loss
     }
 }

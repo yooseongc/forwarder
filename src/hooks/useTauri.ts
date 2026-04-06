@@ -31,6 +31,9 @@ export const api = {
     invoke<number>("ping_host", { host, port }),
   exportConfig: () => invoke<string>("export_config"),
   importConfig: (json: string) => invoke("import_config", { json }),
+  resetHostKey: (host: string, port: number) =>
+    invoke("reset_host_key", { host, port }),
+  resetAllHostKeys: () => invoke("reset_all_host_keys"),
 };
 
 export function onStatusChange(

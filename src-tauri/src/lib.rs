@@ -5,6 +5,10 @@ pub mod error;
 mod ssh;
 mod state;
 
+/// Shared test lock for tests that mutate FORWARDER_CONFIG_DIR env var.
+#[cfg(test)]
+pub(crate) static ENV_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 use state::AppState;
 use tauri::{
     AppHandle, Manager,
@@ -72,6 +76,8 @@ pub fn run() {
             commands::ping_host,
             commands::export_config,
             commands::import_config,
+            commands::reset_host_key,
+            commands::reset_all_host_keys,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

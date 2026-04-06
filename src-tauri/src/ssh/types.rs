@@ -6,6 +6,7 @@ pub enum ConnectionStatus {
     Disconnected,
     Connecting,
     Connected,
+    Reconnecting { attempt: u32 },
     Error { message: String },
 }
 

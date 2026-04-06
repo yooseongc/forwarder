@@ -20,6 +20,7 @@ const baseProfile: ConnectionProfile = {
     { id: "r2", kind: "dynamic", bindAddress: "127.0.0.1", bindPort: 1080, remoteHost: "", remotePort: 0, enabled: false },
   ],
   autoConnect: false,
+  autoReconnect: true,
 };
 
 const noop = () => {};

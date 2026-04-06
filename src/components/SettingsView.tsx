@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { t, useLocaleContext, type Locale } from "@/i18n";
-import { Download, Upload, Sun, Moon, Monitor, ArrowLeft, Globe } from "lucide-react";
+import { Download, Upload, Sun, Moon, Monitor, ArrowLeft, Globe, ShieldAlert } from "lucide-react";
 
 interface Props {
   onClose?: () => void;
@@ -169,6 +169,31 @@ export default function SettingsView({ onClose }: Props) {
               {msg && (
                 <p className={`text-xs ${msg.error ? "text-destructive" : "text-green-400"}`}>{msg.text}</p>
               )}
+            </CardContent>
+          </Card>
+        </div>
+        {/* Security */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Security</h3>
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await api.resetAllHostKeys();
+                    setMsg({ text: t("hostKey.resetDone"), error: false });
+                  } catch (e) {
+                    setMsg({ text: extractErrorMessage(e), error: true });
+                  }
+                }}
+              >
+                <ShieldAlert /> {t("hostKey.resetAll")}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                {t("hostKey.resetAllDesc")}
+              </p>
             </CardContent>
           </Card>
         </div>

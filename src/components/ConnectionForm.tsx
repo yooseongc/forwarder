@@ -245,9 +245,15 @@ export default function ConnectionForm({ profile: initial, onSave, onCancel }: P
         <div className="space-y-4">
           <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("form.options")}</h3>
           <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Switch checked={profile.autoConnect} onCheckedChange={(autoConnect) => update({ autoConnect })} />
-              <Label>{t("form.autoConnect")}</Label>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <Switch checked={profile.autoConnect} onCheckedChange={(autoConnect) => update({ autoConnect })} />
+                <Label>{t("form.autoConnect")}</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch checked={profile.autoReconnect} onCheckedChange={(autoReconnect) => update({ autoReconnect })} />
+                <Label>{t("form.autoReconnect")}</Label>
+              </div>
             </CardContent>
           </Card>
         </div>

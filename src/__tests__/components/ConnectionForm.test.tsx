@@ -20,6 +20,7 @@ const filledProfile: ConnectionProfile = {
   authMethod: { type: "password" },
   forwardingRules: [],
   autoConnect: false,
+  autoReconnect: true,
 };
 
 const noop = () => {};

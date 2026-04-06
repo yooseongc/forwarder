@@ -22,11 +22,15 @@ type ReverseMap = Arc<Mutex<HashMap<(String, u32), (String, u16)>>>;
 pub(crate) struct ClientHandler {
     /// Maps remote (bind_address, bind_port) to local (target_host, target_port)
     reverse_targets: ReverseMap,
+    /// SSH server host (for known_hosts lookup)
+    host: String,
+    /// SSH server port
+    port: u16,
 }
 
 impl ClientHandler {
-    fn new(reverse_targets: ReverseMap) -> Self {
-        Self { reverse_targets }
+    fn new(reverse_targets: ReverseMap, host: String, port: u16) -> Self {
+        Self { reverse_targets, host, port }
     }
 }
 
@@ -36,12 +40,30 @@ impl client::Handler for ClientHandler {
 
     async fn check_server_key(
         &mut self,
-        _server_public_key: &key::PublicKey,
+        server_public_key: &key::PublicKey,
     ) -> Result<bool, Self::Error> {
-        // TOFU (Trust On First Use) policy — accept all keys.
-        // TODO: implement known_hosts file checking (%APPDATA%/forwarder/known_hosts)
-        log::warn!("Accepting SSH host key (TOFU policy)");
-        Ok(true)
+        use super::known_hosts::{self, KeyStatus};
+
+        match known_hosts::verify_or_store(&self.host, self.port, server_public_key)? {
+            KeyStatus::Trusted => {
+                log::info!("Host key trusted for {}:{}", self.host, self.port);
+                Ok(true)
+            }
+            KeyStatus::New => {
+                log::info!("New host key for {}:{} — stored (TOFU)", self.host, self.port);
+                Ok(true)
+            }
+            KeyStatus::Changed => {
+                log::warn!("HOST KEY CHANGED for {}:{}", self.host, self.port);
+                anyhow::bail!(
+                    "Host key has changed for {}:{}. \
+                     The server may have been reinstalled, or this could indicate a security threat. \
+                     If you trust this server, reset the host key and reconnect.",
+                    self.host,
+                    self.port
+                );
+            }
+        }
     }
 
     async fn server_channel_open_forwarded_tcpip(
@@ -105,7 +127,7 @@ impl SshSession {
             );
         }
 
-        let handler = ClientHandler::new(reverse_targets);
+        let handler = ClientHandler::new(reverse_targets, profile.host.clone(), profile.port);
         let addr = format!("{}:{}", profile.host, profile.port);
 
         let mut handle = client::connect(config, &addr, handler)

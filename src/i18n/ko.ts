@@ -3,6 +3,7 @@ export const ko = {
   "status.connected": "연결됨",
   "status.connecting": "연결 중...",
   "status.disconnected": "연결 안됨",
+  "status.reconnecting": "재연결 중",
   "status.error": "오류",
   "status.unknown": "알 수 없음",
 
@@ -39,6 +40,7 @@ export const ko = {
   "form.noRules": "포워딩 규칙이 없습니다",
   "form.options": "옵션",
   "form.autoConnect": "시작 시 자동 연결",
+  "form.autoReconnect": "연결 끊김 시 자동 재연결",
   "form.saveFailed": "저장 실패",
 
   // Forwarding
@@ -123,6 +125,14 @@ export const ko = {
   "help.forwardingRemoteDesc": "SSH 서버의 포트를 내 컴퓨터로 연결합니다.\n예: SSH 서버 9090 → SSH → 내 로컬 3000\n용도: 외부에서 로컬 개발 서버 접근, 웹훅 수신",
   "help.forwardingDynamic": "Dynamic (SOCKS5 프록시)",
   "help.forwardingDynamicDesc": "로컬에 SOCKS5 프록시를 열어 모든 트래픽을 SSH 서버를 통해 라우팅합니다.\n예: 로컬 1080 → SSH → 인터넷\n용도: 브라우저 프록시, 네트워크 우회",
+
+  // Host key
+  "hostKey.mismatch": "호스트 키가 변경되었습니다",
+  "hostKey.mismatchDesc": "서버가 재설치되었다면 호스트 키를 초기화하세요. 그렇지 않다면 보안 위협일 수 있습니다.",
+  "hostKey.reset": "호스트 키 초기화",
+  "hostKey.resetAll": "모든 호스트 키 초기화",
+  "hostKey.resetAllDesc": "모든 저장된 호스트 키를 삭제합니다. 다음 접속 시 각 서버의 키가 새로 저장됩니다.",
+  "hostKey.resetDone": "호스트 키가 초기화되었습니다.",
 
   // Misc
   "action.addConnection": "새 연결 추가",

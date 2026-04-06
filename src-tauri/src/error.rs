@@ -19,6 +19,7 @@ pub enum ErrorCode {
     TunnelUnsupported,
     ConfigError,
     CredentialError,
+    HostKeyMismatch,
     Internal,
 }
 
@@ -54,6 +55,13 @@ impl AppError {
     pub fn credential(msg: impl Into<String>) -> Self {
         Self {
             code: ErrorCode::CredentialError,
+            message: msg.into(),
+        }
+    }
+
+    pub fn host_key_mismatch(msg: impl Into<String>) -> Self {
+        Self {
+            code: ErrorCode::HostKeyMismatch,
             message: msg.into(),
         }
     }

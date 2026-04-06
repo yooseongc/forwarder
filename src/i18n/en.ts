@@ -4,6 +4,7 @@ export const en: Messages = {
   "status.connected": "Connected",
   "status.connecting": "Connecting...",
   "status.disconnected": "Disconnected",
+  "status.reconnecting": "Reconnecting",
   "status.error": "Error",
   "status.unknown": "Unknown",
 
@@ -38,6 +39,7 @@ export const en: Messages = {
   "form.noRules": "No forwarding rules",
   "form.options": "Options",
   "form.autoConnect": "Auto-connect on startup",
+  "form.autoReconnect": "Auto-reconnect on disconnect",
   "form.saveFailed": "Save failed",
 
   "forward.type": "Type",
@@ -116,6 +118,13 @@ export const en: Messages = {
   "help.forwardingRemoteDesc": "Forwards a port on the SSH server back to your local machine.\nExample: SSH Server 9090 → SSH → Local 3000\nUse: Expose local dev servers, receive webhooks",
   "help.forwardingDynamic": "Dynamic (SOCKS5 Proxy)",
   "help.forwardingDynamicDesc": "Opens a local SOCKS5 proxy that routes all traffic through the SSH server.\nExample: Local 1080 → SSH → Internet\nUse: Browser proxy, network bypass",
+
+  "hostKey.mismatch": "Host key has changed",
+  "hostKey.mismatchDesc": "If the server was reinstalled, reset the host key. Otherwise, this could be a security threat.",
+  "hostKey.reset": "Reset Host Key",
+  "hostKey.resetAll": "Reset All Host Keys",
+  "hostKey.resetAllDesc": "Deletes all saved host keys. Each server's key will be re-saved on the next connection.",
+  "hostKey.resetDone": "Host keys have been reset.",
 
   "action.addConnection": "Add new connection",
   "error.unknown": "Unknown error",

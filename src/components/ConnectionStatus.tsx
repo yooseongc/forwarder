@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Pencil, Trash2, RefreshCw, Plug, Unplug, X, Activity } from "lucide-react";
+import { Pencil, Trash2, RefreshCw, Plug, Unplug, X, Activity, ShieldAlert } from "lucide-react";
 import { t } from "@/i18n";
 
 interface Props {
@@ -21,6 +21,7 @@ interface Props {
 export default function ConnectionStatusView({ profile, status, profileStatus, onEdit, onDelete, onRefresh }: Props) {
   const isConnected = status === "connected";
   const isConnecting = status === "connecting";
+  const isReconnecting = typeof status === "object" && "reconnecting" in status;
   const [actionError, setActionError] = useState<string | null>(null);
   const [pingResult, setPingResult] = useState<string | null>(null);
 
@@ -105,7 +106,7 @@ export default function ConnectionStatusView({ profile, status, profileStatus, o
                 <RefreshCw /> {t("action.reconnect")}
               </Button>
             )}
-            {isConnecting ? (
+            {(isConnecting || isReconnecting) ? (
               <Button variant="outline" size="sm" onClick={handleCancel}>
                 <X /> {t("action.cancel")}
               </Button>
@@ -124,7 +125,33 @@ export default function ConnectionStatusView({ profile, status, profileStatus, o
         {/* Error */}
         {actionError && (
           <Card className="border-destructive/30 bg-destructive/10">
-            <CardContent className="p-3 text-sm text-destructive">{actionError}</CardContent>
+            <CardContent className="p-3 space-y-2">
+              <p className="text-sm text-destructive">{actionError}</p>
+              {actionError.includes("Host key") && (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-destructive/80 flex items-center gap-1.5">
+                    <ShieldAlert className="size-3.5 shrink-0" />
+                    {t("hostKey.mismatchDesc")}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={async () => {
+                      try {
+                        await api.resetHostKey(profile.host, profile.port);
+                        setActionError(null);
+                        await api.connect(profile.id);
+                        onRefresh();
+                      } catch (e) {
+                        setActionError(extractErrorMessage(e));
+                      }
+                    }}
+                  >
+                    {t("hostKey.reset")}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
           </Card>
         )}
 
